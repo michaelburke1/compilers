@@ -1,5 +1,7 @@
 #include "expr.h"
+#include "decl.h"
 #include "symbol.h"
+#include "scope.h"
 #include <stdlib.h>
 
 
@@ -186,6 +188,33 @@ void expr_print(struct expr *e) {
     //if (e->kind != EXPR_NAME && e->kind != EXPR_COMMA && e->kind != EXPR_NAME && e->kind != EXPR_LBRACK && e->kind != EXPR_EQUAL) printf(")");
     if (e->kind == EXPR_FUNCTION) printf(")");
  //   if (e->kind == EXPR_RBRACK) printf("[");
+}
+
+struct expr * expr_resolve(struct expr *e) {
+    if (!e)return NULL;
+
+    expr_resolve(e->left);
+    expr_resolve(e->right);
+
+    if (e->kind == EXPR_NAME || e->kind == EXPR_FUNCTION) {
+        struct symbol *s = scope_lookup(e->name);
+        if (s) {
+            e->symbol = s;
+            printf("%s resolves to ", e->name);
+            symbol_print(s); printf("\n");
+        } else {
+            if (e->kind == EXPR_NAME) {
+                printf("variable %s is not defined in this scope\n", e->name);
+                printf("%d\n", scope_level());
+                incrementErrors("r");
+                // exit(1); // exit here?
+            } else if (e->kind == EXPR_FUNCTION) {
+                printf("variable function %s is not defined in this scope\n", e->name);
+                incrementErrors("r");
+                // exit(1); // exit here? 
+            }
+        }
+    }
 }
 
 

@@ -8,6 +8,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "type.h"
+#include "scope.h"
 
 extern int yylex();
 extern int yylineno;
@@ -54,6 +55,30 @@ int parse(char *file) {
         printf("Oh no\n");
         return 1;
     }
+}
+
+int resolve(char *file) {
+    yyin = fopen( file, "r" );
+
+    if (!yyin) {
+        fprintf(stderr, "file no good\n");
+        exit(1);
+    }
+
+    if (!yyparse()) {
+        printf("parse successful\n");
+        scope_enter();
+        decl_resolve(parser_result);
+        printf("%d resolve errors found\n",getErrors("r"));
+        if(getErrors("r") > 0) {
+            return 1;
+        }
+        return 0;
+    }
+    else {
+        printf("Oh no\n");
+        return 1;
+    }
 
 }
 
@@ -73,6 +98,10 @@ int main(int argc, char ** argv) {
     } 
     else if (strcmp(argv[1],"-parse") == 0) {
         mode = 2;
+    } else if (strcmp(argv[1], "-resolve") == 0 ) {
+        mode = 3;
+    } else if (strcmp(argv[1], "-typecheck") == 0 ) {
+        mode = 4;
     }
 
     if (!mode) {
@@ -90,6 +119,14 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "parse failed\n");
             return 1;
         }
+    } else if (mode == 3) {
+        if (resolve(argv[2])) {
+            fprintf(stderr, "parse failed\n");
+            return 1;
+        } else {
+            printf("resolve passed\n");
+        }
+        
     }
 
     return 0;

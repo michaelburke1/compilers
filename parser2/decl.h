@@ -17,7 +17,12 @@ struct decl {
     int emptyFunc;
 };
 
+int incrementErrors(const char *s);
 struct decl * decl_create( char *name, struct type *t, struct expr *v, struct stmt *c, struct decl *next, int noInit );
 void decl_print( struct decl *d, int indent );
+void decl_resolve(struct decl * d);
+int incrementErrors(const char * s);
+int getErrors(const char * s);
+
 
 #endif

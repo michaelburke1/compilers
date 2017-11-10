@@ -1,5 +1,7 @@
 #include "param_list.h"
 #include "expr.h"
+#include "decl.h"
+#include "scope.h"
 #include <stdlib.h>
 
 
@@ -23,4 +25,22 @@ void param_list_print(struct param_list *p) {
         printf(", ");
         param_list_print(p->next);
     }
+}
+
+struct param_list * param_list_resolve(struct param_list *pl) {
+
+    struct param_list * curr = pl;
+
+    while (curr) {
+        if (scope_lookup(curr->name)) {
+            printf("params list resolve error: %s is already declared\n", curr->name);
+            incrementErrors("r");
+            // exit(1);
+        }
+        struct symbol *s = symbol_create(SYMBOL_PARAM, curr->type, curr->name);
+		scope_bind(curr->name, s);
+        curr = curr->next;
+    }
+
+    return curr;
 }
