@@ -42,6 +42,10 @@ struct symbol * scope_lookup_current(const char *name) {
 }
 
 struct symbol * scope_lookup(const char * name) {
+    if (!name) {
+        printf("name is null?\n");
+        return NULL;
+    }
     if (!tail) {
         printf("no tail table\n");
         return NULL;

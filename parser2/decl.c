@@ -85,7 +85,7 @@ void decl_resolve( struct decl *d )
     
     if (scope_level() == 1) {
         struct symbol * newS = symbol_create(kind, d->type, d->name);
-        //d->symbol = newS;
+        d->symbol = newS;
         scope_bind(d->name, newS);
     }
     if (scope_level() > 1) {
@@ -98,6 +98,7 @@ void decl_resolve( struct decl *d )
     if(d->code) {
         scope_enter();
         if (d->type->params) {
+            //sym->params = d->type->params;
             param_list_resolve(d->type->params);
         }
         stmt_resolve(d->code);
@@ -105,6 +106,13 @@ void decl_resolve( struct decl *d )
     } else if (d->value) {
         expr_resolve(d->value);
     }
-    
+
+    if ((!d->code) && d->type->params ) {
+		scope_enter();
+		//sym->params = d->type->params;
+		param_list_resolve(d->type->params);
+		scope_exit();
+	}
+
     decl_resolve(d->next);
 }

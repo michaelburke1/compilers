@@ -196,6 +196,8 @@ struct expr * expr_resolve(struct expr *e) {
     expr_resolve(e->left);
     expr_resolve(e->right);
 
+    if (!e->name) return NULL;
+
     if (e->kind == EXPR_NAME || e->kind == EXPR_FUNCTION) {
         struct symbol *s = scope_lookup(e->name);
         if (s) {
@@ -214,6 +216,8 @@ struct expr * expr_resolve(struct expr *e) {
                 // exit(1); // exit here? 
             }
         }
+    } else {
+        printf("uh\n");
     }
 }
 
