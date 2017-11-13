@@ -36,7 +36,9 @@ typedef enum {
     EXPR_CHARACTER,
     EXPR_BOOLEAN,
     EXPR_STRING,
-    EXPR_GROUP
+    EXPR_GROUP,
+    EXPR_ARRAY_IDENT,
+    EXPR_ARRAY_ELEMENT
 } expr_t;
 
 struct expr {

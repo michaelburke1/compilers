@@ -71,8 +71,8 @@ for use by scanner.c.
 
 %type <decl> program decl_list decl
 %type <stmt> stmt stmt_list stmt_regular stmt_no_inner 
-%type <expr> expr expr_list expr_assign expr_array expr_brack expr_rarray expr_or expr_and expr_comp expr_as expr_md expr_expo expr_neg expr_preIncr expr_posIncr expr_group expr_values expr_bool expr_opt 
-%type <type> type
+%type <expr> expr expr_list expr_assign expr_or expr_and expr_comp expr_as expr_md expr_expo expr_neg expr_preIncr expr_posIncr expr_group expr_values expr_bool expr_opt array_elements
+%type <type> type type2
 %type <param_list> param_list param_list_n param
 /*%type <symbol> ident*/
 %type <name> ident
@@ -132,6 +132,8 @@ decl        : ident TOKEN_COLON type TOKEN_SEMI
                 { $$ = decl_create($1, $3, 0, $6, 0, 0); }
             | ident TOKEN_COLON type TOKEN_EQUAL TOKEN_LCURLY TOKEN_RCURLY
                 { $$ = decl_create($1, $3, 0, 0, 0, 1); }
+            | ident TOKEN_COLON TOKEN_ARRAY TOKEN_LBRACK TOKEN_RBRACK type2 TOKEN_EQUAL expr TOKEN_SEMI
+                { $$ = decl_create($1, $6, $8, 0, 0, 0); }
             ;
 
 stmt        : stmt_no_inner
@@ -182,25 +184,10 @@ expr	    : expr_assign
 
 expr_assign : ident TOKEN_EQUAL expr_assign
                 { $$ = expr_create(EXPR_EQUAL, expr_create_name($1), $3); }
-            | expr_array TOKEN_EQUAL expr_assign
-                { $$ = expr_create(EXPR_EQUAL, $1, $3); }
+            // | expr_array TOKEN_EQUAL expr_assign
+            //     { $$ = expr_create(EXPR_EQUAL, $1, $3); }
             | expr_or
                 { $$ = $1; }
-            ;
-
-expr_array  : ident TOKEN_LBRACK expr_rarray
-                { $$ = expr_create(EXPR_LBRACK, expr_create_name($1), $3); }
-            ;
-
-expr_rarray : expr TOKEN_RBRACK expr_brack
-                { $$ = expr_create(EXPR_RBRACK, $1, $3); }
-            ;
-
-
-expr_brack  : TOKEN_LBRACK expr TOKEN_RBRACK expr_brack
-                {$$ = expr_create(EXPR_BRACKS, $2, $4); }
-            | 
-                { $$ = 0; }
             ;
 
 expr_or     : expr_or TOKEN_OR expr_and
@@ -311,8 +298,8 @@ expr_values : TOKEN_CHAR_LITERAL
                 }
             | ident 
                 { $$ = expr_create_name($1); }
-            | ident TOKEN_LBRACK expr_rarray
-                { $$ = expr_create(EXPR_LBRACK, expr_create_name($1), $3); }
+            | ident TOKEN_LBRACK expr TOKEN_RBRACK array_elements
+                {$$ = expr_create(EXPR_ARRAY_IDENT,expr_create_name($1),expr_create(EXPR_ARRAY_ELEMENT,$3,$5));}
             | expr_bool
                 {$$ = $1; }
             ;
@@ -335,7 +322,23 @@ type        : TOKEN_INTEGER
                 { $$ = type_create(TYPE_CHARACTER, 0, 0, 0); } 
             | TOKEN_STRING
                 { $$ = type_create(TYPE_STRING, 0, 0, 0); } 
-            | TOKEN_ARRAY TOKEN_LBRACK expr_opt TOKEN_RBRACK type
+            | TOKEN_ARRAY TOKEN_LBRACK expr TOKEN_RBRACK type
+                { $$ = type_create(TYPE_ARRAY, $3, 0, $5); } 
+            | TOKEN_BOOLEAN
+                { $$ = type_create(TYPE_BOOLEAN, 0, 0, 0); } 
+            | TOKEN_FUNCTION type2 TOKEN_LPAREN param_list TOKEN_RPAREN 
+                { $$ = type_create(TYPE_FUNCTION, 0, $4, $2); } 
+            | TOKEN_VOID
+                { $$ = type_create(TYPE_VOID, 0, 0, 0); } 
+            ;
+
+type2       : TOKEN_INTEGER
+                { $$ = type_create(TYPE_INTEGER, 0, 0, 0); }
+            | TOKEN_CHAR
+                { $$ = type_create(TYPE_CHARACTER, 0, 0, 0); } 
+            | TOKEN_STRING
+                { $$ = type_create(TYPE_STRING, 0, 0, 0); } 
+            | TOKEN_ARRAY TOKEN_LBRACK expr_opt TOKEN_RBRACK type2
                 { $$ = type_create(TYPE_ARRAY, $3, 0, $5); } 
             | TOKEN_BOOLEAN
                 { $$ = type_create(TYPE_BOOLEAN, 0, 0, 0); } 
@@ -347,6 +350,12 @@ type        : TOKEN_INTEGER
 
 param_list  : param_list_n
                 { $$ = $1; }
+            |
+                { $$ = 0; }
+            ;
+
+array_elements: TOKEN_LBRACK expr TOKEN_RBRACK array_elements
+            {$$ = expr_create(EXPR_ARRAY_ELEMENT,$2,$4);}
             |
                 { $$ = 0; }
             ;

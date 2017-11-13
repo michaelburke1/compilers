@@ -81,20 +81,19 @@ struct expr * expr_create_string_literal(const char *str) {
 
 void expr_print(struct expr *e) {
     if (!e) return;
-    if (e->kind == EXPR_BRACKS) {
-        printf("[");
-        expr_print(e->left);
-        printf("]");
-    } else if (e->kind == EXPR_ARRAY_LITERAL) {
-        printf("{");
-        expr_print(e->left);
-        printf("}");
-    } 
-    else {
-        expr_print(e->left);
-    } 
+    
+    int array = 0;
+    expr_print(e->left);
+     
     //if (e->kind != EXPR_COMMA && e->kind != EXPR_NAME && e->kind != EXPR_LBRACK && e->kind != EXPR_EQUAL) printf("(");
     switch (e->kind) {
+        case EXPR_ARRAY_LITERAL:
+            array = 1;
+            break;
+        case EXPR_ARRAY_ELEMENT:
+            printf("]");
+            if(e->right!=NULL)printf("[");
+            break;
         case EXPR_ADD:
             printf(" + ");
             break;
@@ -127,8 +126,6 @@ void expr_print(struct expr *e) {
             //expr_print(e->left);
     //        printf("]");
             //expr_print(e->right); 
-            break;
-        case EXPR_ARRAY_LITERAL:
             break;
         case EXPR_OR:
             printf(" || ");
@@ -199,7 +196,19 @@ void expr_print(struct expr *e) {
             return;
             break;
     }
-    expr_print(e->right);
+    if (array) {
+        printf("{");
+        expr_print(e->right);
+        printf("}");
+    } else {
+        if (e->kind == EXPR_ARRAY_IDENT) {
+            printf("[");
+            expr_print(e->right);
+        } else {
+            expr_print(e->right);
+        }
+    }
+
     //if (e->kind != EXPR_NAME && e->kind != EXPR_COMMA && e->kind != EXPR_NAME && e->kind != EXPR_LBRACK && e->kind != EXPR_EQUAL) printf(")");
     if (e->kind == EXPR_FUNCTION) printf(")");
  //   if (e->kind == EXPR_RBRACK) printf("[");
@@ -533,17 +542,23 @@ struct type * expr_typecheck(struct expr *e) {
             expr_typecheck(e->right);
             return type_create(TYPE_VOID, 0, 0, 0);
             break;
-        // case EXPR_LBRACK:
-        //     if(expr_typecheck(e->right)->kind == TYPE_INTEGER) {
-        //         return type_create(expr_typecheck(e->left)->subtype->kind, 0, 0, 0);
-        //     } else {
-        //         printf("Cannot use ");
-        //         type_print(expr_typecheck(e->right));
-        //         printf(" as an array index. Must use an integer\n");
-        //         incrementErrors("t");
-        //         return type_create(expr_typecheck(e->left)->subtype->kind, 0, 0, 0);
-        //     }
-        //     break;
+        case EXPR_ARRAY_IDENT:
+            s = scope_lookup(e->left->name);
+            type = s->type;
+            if(type->kind == TYPE_STRING){
+                struct type *t = expr_typecheck(e->right->left);
+                if(t->kind !=TYPE_INTEGER)
+                {
+                    printf("Index for the string %s needs to be and integer\n", e->left->name);
+                    incrementErrors("t");
+                }
+                return type_create(TYPE_CHARACTER, 0, 0, 0);
+            }
+            while(type->kind == TYPE_ARRAY) {
+                type = type->subtype;
+            }
+            return type_create(type->kind, 0, 0, 0);   
+            break;
         default:
             // printf("\nthis: \n");
             // expr_print(e);
