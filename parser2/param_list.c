@@ -27,20 +27,11 @@ void param_list_print(struct param_list *p) {
     }
 }
 
-struct param_list * param_list_resolve(struct param_list *pl) {
-
-    struct param_list * curr = pl;
-
-    while (curr) {
-        if (scope_lookup(curr->name)) {
-            printf("params list resolve error: %s is already declared\n", curr->name);
-            incrementErrors("r");
-            // exit(1);
-        }
-        struct symbol *s = symbol_create(SYMBOL_PARAM, curr->type, curr->name);
-		scope_bind(curr->name, s);
-        curr = curr->next;
-    }
-
-    return curr;
+void param_list_resolve(struct param_list *pl) {
+    
+    if (!pl) return;
+    
+    struct symbol *s = symbol_create(SYMBOL_PARAM, pl->type, pl->name, 0, 0);
+    scope_bind(pl->name, s);
+    param_list_resolve(pl->next);
 }

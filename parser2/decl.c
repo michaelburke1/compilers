@@ -3,12 +3,18 @@
 #include "scope.h"
 #include "expr.h"
 #include "param_list.h"
+#include "type.h"
+#include "hash_table.h"
+#include "stmt.h"
+#include "symbol.h"
 #include <string.h>
 #include <stdlib.h>
 
-int currLocalVars = 0;
 int resolveErrors = 0;
 int checkErrors = 0;
+struct hash_table * initTable = NULL;
+int const_expr = 0;
+
 
 int incrementErrors(const char * s) {
 
@@ -83,36 +89,213 @@ void decl_resolve( struct decl *d )
     symbol_t kind = scope_level() > 1 ?
         SYMBOL_LOCAL : SYMBOL_GLOBAL;
     
-    if (scope_level() == 1) {
-        struct symbol * newS = symbol_create(kind, d->type, d->name);
-        d->symbol = newS;
-        scope_bind(d->name, newS);
+    struct symbol * newS = symbol_create(kind, d->type, d->name, 0, 0);
+    d->symbol = newS;
+    scope_bind(d->name, newS);
+
+    expr_resolve(d->value);
+
+    if(d->type->kind == TYPE_FUNCTION) {
+        param_list_resolve(d->type->params);
+        if(!initTable) initTable = hash_table_create(0,0);
+        hash_table_insert(initTable, d->name, d->type);
     }
-    if (scope_level() > 1) {
-        currLocalVars++; 
-        struct symbol * newS = symbol_create(kind, d->type, d->name);
-        d->symbol = newS;
-        scope_bind(d->name, newS);
-    }
- 
+
     if(d->code) {
         scope_enter();
-        if (d->type->params) {
-            //sym->params = d->type->params;
-            param_list_resolve(d->type->params);
-        }
         stmt_resolve(d->code);
         scope_exit();
-    } else if (d->value) {
-        expr_resolve(d->value);
     }
-
-    if ((!d->code) && d->type->params ) {
-		scope_enter();
-		//sym->params = d->type->params;
-		param_list_resolve(d->type->params);
-		scope_exit();
-	}
-
     decl_resolve(d->next);
 }
+
+void decl_typecheck(struct decl *d) {
+
+    if (!d) {
+        return;
+    }
+
+    if (d->value) {
+        if (d->type->kind != TYPE_ARRAY) {
+            struct type* t;
+            t = expr_typecheck(d->value);
+            if(d->type-> kind != t->kind){
+                printf("Cannot assign ");
+                expr_print(d->value);
+                printf(" to ");
+                type_print(d->type);
+                printf("\n");
+                incrementErrors("t");
+            }
+        } else {
+            if (d->value->kind != EXPR_ARRAY_LITERAL) {
+                printf("Cannot assign \n");
+                    expr_print(d->value);
+                    printf(" to array %s\n",d->name);
+                    incrementErrors("t");
+            } else {
+                struct type *currType = d->type;
+                int args = 1;
+                if (currType->expr) {
+                    while (currType->kind == TYPE_ARRAY) {
+                        if (currType->expr && currType->expr->kind != EXPR_INTEGER) {
+                            printf("Array %s must have a literal value as index\n",d->name);
+                            incrementErrors("t");
+                            break;
+                        } else {
+                            args = currType->expr->literal_value;
+                        }
+                        currType = currType->subtype;
+                    }
+                } else {
+                    args = 1000;
+                    while (currType->kind == TYPE_ARRAY) currType = currType->subtype;
+                }
+
+                handleArrayValues(d->value, currType, d->name);
+                if (const_expr > args) {
+                    printf("Too many arguments when initializing array %s\n", d->name);
+                    incrementErrors("t");
+                }
+            }
+        }
+    } 
+
+    if (d->symbol->kind == SYMBOL_GLOBAL) {
+        const_expr = 0;
+        expr_constant(d->value);
+        if (const_expr) {
+            incrementErrors("t");
+            printf("Tried to assign not constant variable in the declaration of %s\n",d->name);
+        }
+    }
+
+    if (d->code) {
+        stmt_typecheck(d->code, d->type->subtype);
+    }
+
+    decl_typecheck(d->next);
+}
+
+void handleArrayValues(struct expr *e,struct type *t,const char *name)
+{
+
+    if(!e)return;
+    if(e->kind == EXPR_COMMA || e->kind == EXPR_ARRAY_LITERAL ){ handleArrayValues(e->left,t,name); handleArrayValues(e->right,t,name);}
+    else{
+        const_expr++;   
+        struct type *aux2 = expr_typecheck(e);
+        if(aux2->kind != t->kind){
+            incrementErrors("t");
+            printf("Passing wrong argument to array %s: incorrect expression list ", name);
+            type_print(aux2);
+            printf(" ");
+            expr_print(e);
+            printf("\n");
+        }
+    
+    }
+}
+
+void expr_constant(struct expr *e)
+{
+    if (!e || const_expr > 0)return;
+    expr_constant(e->left);
+    expr_constant(e->right);
+    if (e->kind == EXPR_NAME)const_expr++;
+}
+
+struct hash_table * getInit() {
+    return initTable;
+}
+
+/*
+
+struct type * decl_typecheck(struct decl *d) {
+    
+    if (!d) return type_create(TYPE_VOID, 0, 0, 0);
+    struct type *result = NULL;
+
+    if (d->value) {
+        struct type *expr_result = expr_typecheck(d->value);
+		if (d->type->kind == expr_result->kind) {
+			result = type_create(d->type->kind, 0, 0, 0);
+		} else {
+			printf("Type Mismatch: %s expects a ", d->name);
+			type_print(d->type);
+			printf(" but was given a ");
+			type_print(expr_result);
+			printf("\n");
+		    incrementErrors("t");
+        }
+    } else if (d->code) {
+        struct type *function_return = stmt_typecheck(d->code);
+		if (function_return) {
+			if (type_equals(d->type->subtype, function_return)) {
+				result = type_create(d->type->subtype->kind, 0, 0, 0);
+			} else {
+				printf("Type Error: Function %s expects a ", d->name);
+				type_print(d->type->subtype);
+				printf(" but a ");
+				type_print(function_return);
+				printf(" was returned\n");	
+                incrementErrors("t"); 
+            }
+		} else {
+			if (d->type->subtype->kind == TYPE_VOID) {
+				result = type_create(TYPE_VOID, 0, 0, 0);
+			} else {
+				printf("Type Error: Function %s expects a ", d->name);
+				type_print(d->type->subtype);
+				printf(" but no return value was found\n");
+			    incrementErrors("t"); 
+            }
+		}
+    } else if (d->emptyFunc) {
+        if(d->type->subtype->kind == TYPE_VOID) {
+			result = type_create(TYPE_VOID, 0, 0, 0);
+		} else {
+			printf("Type Error: Non void function %s cannot be empty\n", d->name);
+		    incrementErrors("t");
+        }
+    } else {
+        if (d->type->kind == TYPE_ARRAY) {
+			if (d->type->expr) {
+				if(d->type->expr->kind != EXPR_INTEGER) {
+					printf("Type Error: Declaration of array %s must have a fixed size\n", d->name);
+				    incrementErrors("t");
+                }
+			} else {
+				printf("Declaration of array %s must have a fixed size\n", d->name);
+		        incrementErrors("t");	
+            }
+		}
+		result = type_create(d->type->kind, 0, 0, 0);    
+    }
+
+    decl_typecheck(d->next);
+    return result;
+}*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

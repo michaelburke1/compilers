@@ -82,6 +82,34 @@ int resolve(char *file) {
 
 }
 
+int typecheck(char *file) {
+    yyin = fopen( file, "r" );
+
+    if (!yyin) {
+        fprintf(stderr, "file no good\n");
+        exit(1);
+    }
+
+    if (!yyparse()) {
+        printf("parse successful\n");
+        scope_enter();
+        decl_resolve(parser_result);
+        printf("%d resolve errors found\n",getErrors("r"));
+        //printf("typecheckinggg");
+        decl_typecheck(parser_result);
+        if (getErrors("t") > 0) {
+            exit(1);
+        }
+        return 0;
+    }
+    else {
+        printf("Oh no\n");
+        return 1;
+    }
+
+}
+
+
 int main(int argc, char ** argv) { 
 
     // sets mode to either scan(1) or parse(2)
@@ -127,6 +155,14 @@ int main(int argc, char ** argv) {
             printf("resolve passed\n");
         }
         
+    } else if (mode == 4) {
+        //printf("running typecheck\n");
+        if (typecheck(argv[2])) {
+            fprintf(stderr, "typecheck failed\n");
+            return 1;
+        } else {
+            printf("typecheck passed\n");
+        }
     }
 
     return 0;

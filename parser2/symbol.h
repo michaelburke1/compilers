@@ -14,8 +14,9 @@ struct symbol {
 	int which;
 	struct type *type;
 	char *name;
+    struct type *subtype;
 };
 
-struct symbol * symbol_create( symbol_t kind, struct type *type, char *name );
+struct symbol * symbol_create( symbol_t kind, struct type *type, char *name, int w, struct type * subtype);
 void symbol_print(struct symbol *s); 
 #endif

@@ -1,8 +1,8 @@
 #ifndef EXPR_H
 #define EXPR_H
-
 #include "symbol.h"
 #include "type.h"
+#include "param_list.h"
 typedef enum {
 	EXPR_ADD,
 	EXPR_SUB,
@@ -23,9 +23,12 @@ typedef enum {
     EXPR_LE,
     EXPR_MOD,
     EXPR_CARAT,
+    EXPR_NEG,
     EXPR_NOT,
-    EXPR_INCREMENT,
-    EXPR_DECREMENT,
+    EXPR_PRE_INCREMENT,
+    EXPR_PRE_DECREMENT,
+    EXPR_POST_INCREMENT,
+    EXPR_POST_DECREMENT,
     EXPR_FUNCTION,
     EXPR_ARRAY_LITERAL,
     EXPR_NAME,
@@ -56,7 +59,9 @@ struct expr * expr_create_boolean_literal( int c );
 struct expr * expr_create_integer_literal( int c );
 struct expr * expr_create_character_literal( int c );
 struct expr * expr_create_string_literal( const char *str );
-struct expr * expr_resolve(struct expr * e);
+void expr_resolve(struct expr * e);
+struct type * expr_typecheck(struct expr * e);
 void expr_print( struct expr *e );
+void checkParams(struct expr *e, struct param_list *p, const char *name);
 
 #endif

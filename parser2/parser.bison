@@ -256,7 +256,7 @@ expr_expo   : expr_expo TOKEN_CARAT expr_neg
             ;
 
 expr_neg    : TOKEN_SUBTRACT expr_neg
-                { $$ = expr_create(EXPR_SUB, 0, $2); }
+                { $$ = expr_create(EXPR_NEG, 0, $2); }
             | TOKEN_NOT expr_neg
                 { $$ = expr_create(EXPR_NOT, 0, $2); }
             | expr_preIncr
@@ -264,17 +264,17 @@ expr_neg    : TOKEN_SUBTRACT expr_neg
             ;
 
 expr_preIncr: TOKEN_INCREMENT expr_posIncr
-                { $$ = expr_create(EXPR_INCREMENT, 0, $2); }
+                { $$ = expr_create(EXPR_PRE_INCREMENT, 0, $2); }
             | TOKEN_DECREMENT expr_posIncr
-                { $$ = expr_create(EXPR_DECREMENT, 0, $2); }
+                { $$ = expr_create(EXPR_PRE_DECREMENT, 0, $2); }
             | expr_posIncr
                 { $$ = $1; }
             ;
 
 expr_posIncr: expr_group TOKEN_INCREMENT 
-                { $$ = expr_create(EXPR_INCREMENT, $1, 0); }
+                { $$ = expr_create(EXPR_POST_INCREMENT, $1, 0); }
             | expr_group TOKEN_DECREMENT 
-                { $$ = expr_create(EXPR_DECREMENT, $1, 0); }
+                { $$ = expr_create(EXPR_POST_DECREMENT, $1, 0); }
             | expr_group
                 { $$ = $1; }
             ;

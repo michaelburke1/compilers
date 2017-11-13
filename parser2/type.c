@@ -48,3 +48,53 @@ void type_print(struct type * t) {
     }
 
 }
+
+struct type * type_copy(struct type *t) {
+    struct type *tmp = type_create(t->kind, t->expr, t->params, t->subtype);
+    return tmp;
+}
+
+int type_equals(struct type *a, struct type *b) {
+
+    if (!a || !b) { 
+        return 0;
+    }
+
+	struct param_list *p1;
+	struct param_list *p2;
+	
+    if (a->kind == TYPE_FUNCTION && b->kind == TYPE_FUNCTION) {
+		if (b->subtype != b->subtype) {
+			return 0;
+        }
+
+		p1 = a->params;
+		p2 = b->params;
+		while (p1 && p2) {
+			if (p1->type->kind != p2->type->kind) {
+				return 0;
+			}
+			p1 = p1->next;
+			p2 = p2->next;
+		}
+		if (p1 || p2) {
+			return 0;
+		}
+		return 1;
+	}
+	if (a->kind == b->kind) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void type_delet(struct type *t) {
+    printf("delete\n");
+
+}
+
+
+
+
+
