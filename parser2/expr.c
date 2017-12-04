@@ -3,6 +3,7 @@
 #include "symbol.h"
 #include "scope.h"
 #include <stdlib.h>
+#include <string.h>
 
 int topo = -1;
 int cont_aux = 0;
@@ -59,12 +60,12 @@ struct expr * expr_create_integer_literal(int c) {
     return e;
 }
 
-struct expr * expr_create_character_literal(int c) {
+struct expr * expr_create_character_literal(const char *c) {
 
     struct expr *e = malloc(sizeof(*e)); 
     e->kind = EXPR_CHARACTER;
     e->left = e->right = 0;
-    e->literal_value = c;
+    e->string_literal = strdup(c);
 
     return e;
 }
@@ -79,6 +80,138 @@ struct expr * expr_create_string_literal(const char *str) {
     return e;
 }
 
+void expr_print( struct expr *e )
+{
+    if(e == NULL) {
+        return;
+    }
+
+    expr_print(e->left);
+    int isArrayList = 0;
+    switch(e->kind) {
+        case EXPR_ADD:
+            printf("+");
+            break;
+        case EXPR_EQUAL:
+            printf("=");
+            break;
+        case EXPR_SUB:
+            printf("-");
+            break;
+        case EXPR_MULT:
+            printf("*");
+            break;
+        case EXPR_DIVIDE:
+            printf("/");
+            break;
+        case EXPR_MOD:
+            printf("%%");
+            break;
+        case EXPR_NEG:
+            printf("!");
+            break;
+        case EXPR_GT:
+            printf(">");
+            break;
+        case EXPR_GE:
+            printf(">=");
+            break;
+        case EXPR_LT:
+            printf("<");
+            break;
+        case EXPR_LE:
+            printf("<=");
+            break;
+        case EXPR_EQUIV:
+            printf(" == ");
+            break;
+        case EXPR_NOT_EQUAL:
+            printf("!=");
+            break;
+        case EXPR_PRE_INCREMENT:
+        case EXPR_POST_INCREMENT:
+            printf("++");
+            break;
+        case EXPR_PRE_DECREMENT:
+        case EXPR_POST_DECREMENT:
+            printf("--");
+            break;
+        case EXPR_OR:
+            printf(" || ");
+            break;
+        case EXPR_AND:
+            printf(" && ");
+            break;
+        case EXPR_CARAT:
+            printf("^");
+            break;
+        case EXPR_BOOLEAN:
+            if(e->literal_value)
+                printf("true");
+            else 
+                printf("false");
+            break;
+        case EXPR_NAME:
+            printf("%s",e->name);
+            break;
+        case EXPR_INTEGER:
+            printf("%d",e->literal_value);
+            break;
+        case EXPR_CHARACTER:
+            printf("%s",e->string_literal);
+            break;
+        case EXPR_STRING:
+            printf("%s",e->string_literal);
+            break;
+        case EXPR_EXPR_LIST:
+            printf(",");
+            break;
+        case EXPR_FUNCTION:
+            printf("(");
+            expr_print(e->right);
+            printf(")");
+            return;
+            break;
+        case EXPR_NOT:
+            printf("!");
+            break;
+        case EXPR_ARRAY_LIST:
+            isArrayList=1;
+            break;
+        case EXPR_GROUP:
+            printf("(");
+            expr_print(e->right);
+            printf(")");
+            return;
+            break;
+        case EXPR_ARRAY_ELEMENT:
+            printf("]");
+            if(e->right!=NULL)printf("[");
+            break;
+        default:
+            break;
+    }
+    if(isArrayList == 1){
+       printf("{");
+       expr_print(e->right);
+       printf("}");
+    }
+    
+    else{
+        if(e->kind == EXPR_ARRAY_IDENT){
+            printf("[");
+        expr_print(e->right); 
+        }
+        else if(EXPR_ARRAY_ELEMENT){
+        expr_print(e->right);
+        }
+        else expr_print(e->right);              
+    }
+    
+    //printf(")");      
+}
+
+/*
 void expr_print(struct expr *e) {
     if (!e) return;
     
@@ -212,7 +345,7 @@ void expr_print(struct expr *e) {
     //if (e->kind != EXPR_NAME && e->kind != EXPR_COMMA && e->kind != EXPR_NAME && e->kind != EXPR_LBRACK && e->kind != EXPR_EQUAL) printf(")");
     if (e->kind == EXPR_FUNCTION) printf(")");
  //   if (e->kind == EXPR_RBRACK) printf("[");
-}
+}*/
 
 void expr_resolve(struct expr *e) {
     if (!e)return;

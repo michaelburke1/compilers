@@ -38,7 +38,9 @@ typedef enum {
     EXPR_STRING,
     EXPR_GROUP,
     EXPR_ARRAY_IDENT,
-    EXPR_ARRAY_ELEMENT
+    EXPR_ARRAY_ELEMENT,
+    EXPR_EXPR_LIST,
+    EXPR_ARRAY_LIST
 } expr_t;
 
 struct expr {
@@ -59,7 +61,7 @@ struct expr * expr_create( expr_t kind, struct expr *left, struct expr *right );
 struct expr * expr_create_name( const char *n );
 struct expr * expr_create_boolean_literal( int c );
 struct expr * expr_create_integer_literal( int c );
-struct expr * expr_create_character_literal( int c );
+struct expr * expr_create_character_literal(const char *c);
 struct expr * expr_create_string_literal( const char *str );
 void expr_resolve(struct expr * e);
 struct type * expr_typecheck(struct expr * e);
