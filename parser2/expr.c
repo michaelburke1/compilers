@@ -412,6 +412,15 @@ struct type * expr_typecheck(struct expr *e) {
             type = hash_table_lookup(h, e->left->name);
             p = type->params;
 
+            while (p) {
+                p = p->next; 
+                arguments_cont++;
+            }
+            arguments[topo] = arguments_cont;
+           
+            type = hash_table_lookup(h, e->left->name);
+            p = type->params;
+
             checkParams(e->right, p, e->left->name);
             if (arguments[topo] < cont[topo]) {
                 incrementErrors("t");
@@ -693,11 +702,7 @@ struct type * expr_typecheck(struct expr *e) {
             return type_create(type->kind, 0, 0, 0);   
             break;
         default:
-            // printf("\nthis: \n");
-            // expr_print(e);
-            // printf("\n%d\n", e->kind);
             break;
-        //case EXPR_LIST
     }
     return type_create(TYPE_VOID, 0, 0, 0);
 }
