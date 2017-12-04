@@ -90,43 +90,43 @@ void expr_print( struct expr *e )
     int isArrayList = 0;
     switch(e->kind) {
         case EXPR_ADD:
-            printf("+");
+            printf(" + ");
             break;
         case EXPR_EQUAL:
-            printf("=");
+            printf(" = ");
             break;
         case EXPR_SUB:
-            printf("-");
+            printf(" - ");
             break;
         case EXPR_MULT:
-            printf("*");
+            printf(" * ");
             break;
         case EXPR_DIVIDE:
-            printf("/");
+            printf(" / ");
             break;
         case EXPR_MOD:
-            printf("%%");
+            printf(" %% ");
             break;
         case EXPR_NEG:
-            printf("!");
+            printf(" ! ");
             break;
         case EXPR_GT:
-            printf(">");
+            printf(" > ");
             break;
         case EXPR_GE:
-            printf(">=");
+            printf(" >= ");
             break;
         case EXPR_LT:
-            printf("<");
+            printf(" < ");
             break;
         case EXPR_LE:
-            printf("<=");
+            printf(" <= ");
             break;
         case EXPR_EQUIV:
             printf(" == ");
             break;
         case EXPR_NOT_EQUAL:
-            printf("!=");
+            printf(" != ");
             break;
         case EXPR_PRE_INCREMENT:
         case EXPR_POST_INCREMENT:
@@ -206,146 +206,8 @@ void expr_print( struct expr *e )
         expr_print(e->right);
         }
         else expr_print(e->right);              
-    }
-    
-    //printf(")");      
+    }   
 }
-
-/*
-void expr_print(struct expr *e) {
-    if (!e) return;
-    
-    int array = 0;
-    expr_print(e->left);
-     
-    //if (e->kind != EXPR_COMMA && e->kind != EXPR_NAME && e->kind != EXPR_LBRACK && e->kind != EXPR_EQUAL) printf("(");
-    switch (e->kind) {
-        case EXPR_ARRAY_LITERAL:
-            array = 1;
-            break;
-        case EXPR_ARRAY_ELEMENT:
-            printf("]");
-            if(e->right!=NULL)printf("[");
-            break;
-        case EXPR_ADD:
-            printf(" + ");
-            break;
-        case EXPR_SUB:
-            printf(" - ");
-            break;
-        case EXPR_NEG:
-            printf("-");
-            break;
-        case EXPR_MULT:
-            printf(" * ");
-            break;
-        case EXPR_DIVIDE:
-            printf(" / ");
-            break;
-        case EXPR_COMMA:
-            printf(", ");
-            break;
-        case EXPR_EQUAL:
-            printf(" = ");
-            break;
-        case EXPR_LBRACK:
-            printf("[");
-            break;
-        case EXPR_RBRACK:
-            printf("]");
-            break;
-        case EXPR_BRACKS:
-      //      printf("[");
-            //expr_print(e->left);
-    //        printf("]");
-            //expr_print(e->right); 
-            break;
-        case EXPR_OR:
-            printf(" || ");
-            break;
-        case EXPR_AND:
-            printf(" && ");
-            break;
-        case EXPR_GT:
-            printf(" > ");
-            break;
-        case EXPR_LT:
-            printf(" < ");
-            break;
-        case EXPR_EQUIV:
-            printf(" == ");
-            break;
-        case EXPR_NOT_EQUAL:
-            printf(" != ");
-            break;
-        case EXPR_GE:
-            printf(" >= ");
-            break;
-        case EXPR_LE:
-            printf(" <= ");
-            break;
-        case EXPR_MOD:
-            printf("%c", '%');
-            break;
-        case EXPR_CARAT:
-            printf("^");
-            break;
-        case EXPR_NOT:
-            printf("!");
-            break;
-        case EXPR_PRE_INCREMENT:
-        case EXPR_POST_INCREMENT:
-            printf("++");
-            break;
-        case EXPR_PRE_DECREMENT:
-        case EXPR_POST_DECREMENT:
-            printf("--");
-            break;
-        case EXPR_FUNCTION:
-            printf("(");
-            break;
-        case EXPR_NAME:
-            printf("%s", e->name);
-            break;
-        case EXPR_BOOLEAN:
-            if (e->literal_value)
-                printf("true");
-            else 
-                printf("false");
-            break;
-        case EXPR_INTEGER:
-            printf("%d", e->literal_value);
-            break;
-        case EXPR_CHARACTER:
-            printf("'%c'", e->literal_value);
-            break;
-        case EXPR_STRING:
-            printf("%s", e->string_literal);
-            break;
-        case EXPR_GROUP:
-            printf("(");
-            expr_print(e->right);
-            printf(")");
-            return;
-            break;
-    }
-    if (array) {
-        printf("{");
-        expr_print(e->right);
-        printf("}");
-    } else {
-        if (e->kind == EXPR_ARRAY_IDENT) {
-            printf("[");
-            expr_print(e->right);
-        } else {
-            expr_print(e->right);
-        }
-    }
-
-    //if (e->kind != EXPR_NAME && e->kind != EXPR_COMMA && e->kind != EXPR_NAME && e->kind != EXPR_LBRACK && e->kind != EXPR_EQUAL) printf(")");
-    if (e->kind == EXPR_FUNCTION) printf(")");
- //   if (e->kind == EXPR_RBRACK) printf("[");
-}*/
 
 void expr_resolve(struct expr *e) {
     if (!e)return;
@@ -378,7 +240,9 @@ void expr_resolve(struct expr *e) {
 
 struct type * expr_typecheck(struct expr *e) {
     //printf("in expr tc\n");
-    if (!e) return type_create(TYPE_VOID, 0,0,0);
+    if (!e) {
+        return type_create(TYPE_VOID, 0,0,0);
+    }
 
     struct type *l = expr_typecheck(e->left);
     struct type *r = expr_typecheck(e->right);
@@ -453,7 +317,7 @@ struct type * expr_typecheck(struct expr *e) {
             return type_create(TYPE_INTEGER, 0, 0, 0);
             break;
         case EXPR_SUB:
-            if(l->kind!= TYPE_INTEGER || r->kind!= TYPE_INTEGER ) {
+            if(l->kind!= TYPE_INTEGER || r->kind!= TYPE_INTEGER) {
                 printf("Cannot subtract the ");
                 type_print(l);
                 printf(" ");
@@ -468,7 +332,7 @@ struct type * expr_typecheck(struct expr *e) {
             return type_create(TYPE_INTEGER ,0,0,0);
             break;
         case EXPR_MULT:
-            if(l->kind!= TYPE_INTEGER || r->kind!= TYPE_INTEGER ) {
+            if(l->kind!= TYPE_INTEGER || r->kind!= TYPE_INTEGER) {
                 printf("Cannot multiply the ");
                 type_print(l);
                 printf(" ");
@@ -599,7 +463,7 @@ struct type * expr_typecheck(struct expr *e) {
             return type_create(TYPE_INTEGER,0,0,0);
             break;
         case EXPR_EQUAL:
-            if(l->kind!=r->kind){
+            if(l->kind != r->kind) {
                 printf("Cannot make the ");
                 type_print(l);
                 printf(" ");
@@ -614,7 +478,7 @@ struct type * expr_typecheck(struct expr *e) {
             return type_create(expr_typecheck(e->left)->kind,0,0,0);
             break;
         case EXPR_EQUIV:
-            if(l->kind!=r->kind){
+            if(l->kind!=r->kind) {
                 printf("Cannot compare the ");
                 type_print(expr_typecheck(e->right));
                 printf(" ");
@@ -630,7 +494,7 @@ struct type * expr_typecheck(struct expr *e) {
             return type_create(TYPE_BOOLEAN,0,0,0);
             break;
         case EXPR_NOT_EQUAL:
-            if(l->kind!=r->kind){
+            if(l->kind!=r->kind) {
                 printf("Cannot compare the ");
                 type_print(r);
                 printf(" ");
@@ -679,10 +543,14 @@ struct type * expr_typecheck(struct expr *e) {
             }
             return type_create(TYPE_BOOLEAN,0,0,0); 
             break;
-        case EXPR_COMMA:
+        case EXPR_EXPR_LIST:
             expr_typecheck(e->left);
             expr_typecheck(e->right);
             return type_create(TYPE_VOID, 0, 0, 0);
+            break;
+        case EXPR_GROUP:
+            r = expr_typecheck(e->right);
+            return type_create(r->kind, 0, 0, 0);
             break;
         case EXPR_ARRAY_IDENT:
             s = scope_lookup(e->left->name);
@@ -712,22 +580,25 @@ void checkParams(struct expr *e, struct param_list *p, const char *name) {
         return;
     }
 
-    if(e->kind == EXPR_COMMA){checkParams(e->left,p,name); checkParams(e->right,p,name);}
-    else{
+    if (e->kind == EXPR_EXPR_LIST) {
+        checkParams(e->left,p,name); 
+        checkParams(e->right,p,name);
+    }
+    else {
     
         cont[topo]++;
         struct param_list *aux = p;
         int i;
-        for(i=0;i<cont[topo]-1;i++){
+        for(i = 0; i < cont[topo] - 1; ++i){
            aux = aux->next;
            if(!aux){
             return;
            }        
         }
         struct type *aux2 = expr_typecheck(e);
-        if(aux2->kind != aux->type->kind){
+        if (aux2->kind != aux->type->kind) {
             incrementErrors("t");
-            printf("Passing wrong argument to function %s: Passing the ",name);
+            printf("Passing wrong argument to function %s: Passing the ", name);
             type_print(aux2);
             printf(" ");
             expr_print(e);
@@ -736,245 +607,7 @@ void checkParams(struct expr *e, struct param_list *p, const char *name) {
             printf("\n");
         }
     }
-
 }
-
-/*
-struct type *expr_typecheck(struct expr *e) {
-	if(!e) { 
-        return type_create(TYPE_VOID, 0, 0, 0);
-    }
-    
-    struct param_list *param_ptr;
-	struct expr *expr_ptr;
-	struct type *left;
-	struct type *right;
-	
-    switch(e->kind) {
-		case EXPR_GROUP:
-            printf("group?\n");
-			left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			return type_create(TYPE_VOID, 0, 0, 0);
-			break;
-		case EXPR_EQUAL:
-            printf("equal\n");
-            left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			while(left->kind == TYPE_ARRAY) left = left->subtype;
-			while(right->kind == TYPE_ARRAY) left = left->subtype;
-			if(type_equals(left, right) && left->kind != TYPE_FUNCTION) {
-				return type_copy(left);
-			} else {
-				printf("Cannot assign ");
-				type_print(right);
-				printf(" to ");
-				type_print(left);
-				if(e->left->name) {
-					printf(" %s\n", e->left->name);
-				} else {
-					printf("\n");
-				}
-				incrementErrors("t"); 
-                return left;
-			}
-			break;
-		case EXPR_NOT_EQUAL:
-		case EXPR_EQUIV:
-			left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			if(type_equals(left, right) && left->kind != TYPE_FUNCTION && left->kind != TYPE_ARRAY) {
-				return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			} else {
-				printf("Cannot perform logical equals operation on ");
-				type_print(left);
-				printf(" and ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			}
-			break;
-		case EXPR_LT:
-		case EXPR_GT:
-		case EXPR_LE:
-		case EXPR_GE:
-			left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			if(left->kind == TYPE_INTEGER && right->kind == TYPE_INTEGER) {
-				return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			} else {
-				printf("Cannot perform boolean operations on ");
-				type_print(left);
-				printf(" and ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			}
-			break;
-		case EXPR_ADD:
-		case EXPR_SUB:
-		case EXPR_MULT:
-		case EXPR_DIVIDE:
-		case EXPR_MOD:
-		case EXPR_CARAT:
-            printf("arthimetic\n");
-			left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			if(left->kind == TYPE_INTEGER && right->kind == TYPE_INTEGER) {
-				printf("integer\n");
-                return type_create(TYPE_INTEGER, 0, 0, 0);
-			} else {
-				printf("Cannot perform arithmetic operations on ");
-				type_print(left);
-				printf(" and ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_INTEGER, 0, 0, 0);
-			}
-			break;
-		case EXPR_NEG:
-			right = expr_typecheck(e->right);
-			if(right->kind == TYPE_INTEGER) {
-				return type_create(TYPE_INTEGER, 0, 0, 0);
-			} else {
-				printf("Cannot take the negative of ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_INTEGER, 0, 0, 0);
-			}
-			break;
-		case EXPR_OR:
-		case EXPR_AND:
-			left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			if(left->kind == TYPE_BOOLEAN && right->kind == TYPE_BOOLEAN) {
-				return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			} else {
-				printf("Cannot perform logical operations on ");
-				type_print(left);
-				printf(" and ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			}
-			break;
-		case EXPR_NOT:
-			right = expr_typecheck(e->right);
-			if(right->kind == TYPE_BOOLEAN) {
-				return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			} else {
-				printf("Cannot perform a logical not on ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			}
-			break;
-		case EXPR_PRE_INCREMENT:
-		case EXPR_PRE_DECREMENT:
-			right = expr_typecheck(e->right);
-			if(right->kind == TYPE_INTEGER) {
-				return type_create(TYPE_INTEGER, 0, 0, 0);
-			} else {
-				printf("Cannot perform integer operations on ");
-				type_print(right);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_INTEGER, 0, 0, 0);
-			}
-			break;
-		case EXPR_POST_INCREMENT:
-		case EXPR_POST_DECREMENT:
-			left = expr_typecheck(e->left);
-			if(left->kind == TYPE_INTEGER) {
-				return type_create(TYPE_INTEGER, 0, 0, 0);
-			} else {
-				printf("Cannot perform integer operations on ");
-				type_print(left);
-				printf("\n");
-				incrementErrors("t"); 
-                return type_create(TYPE_INTEGER, 0, 0, 0);
-			}
-			break;
-		case EXPR_FUNCTION:
-            printf("function!\n");
-	        struct param_list *param_ptr = e->left->symbol->type->params;
-			printf("after ptr\n");
-            expr_ptr = e->right;
-			while(param_ptr) {
-				if(!expr_ptr) {
-					printf("Not enough arguments given for function %s\n", e->left->name);
-					incrementErrors("t"); 
-                    break;
-				}
-				if(!type_equals(param_ptr->type, expr_typecheck(expr_ptr->left))) {
-					printf("Function %s requires a paramater of type ", e->left->name);
-					type_print(param_ptr->type);
-					printf(" but ");
-					expr_print(expr_ptr->left);
-					printf(" is of type ");
-					type_print(expr_typecheck(expr_ptr->left));
-					printf("\n");
-					incrementErrors("t"); 
-                    break;
-				}
-				param_ptr = param_ptr->next;
-				expr_ptr = expr_ptr->right;
-			}
-			if(expr_ptr) {
-				printf("Too many arguments given for function %s\n", e->left->name);
-		        incrementErrors("t");
-            }
-			return e->left->symbol->type->subtype;
-			break;
-		case EXPR_BOOLEAN:
-			return type_create(TYPE_BOOLEAN, 0, 0, 0);
-			break;
-		case EXPR_INTEGER:
-			return type_create(TYPE_INTEGER, 0, 0, 0);
-			break;
-		case EXPR_CHARACTER:
-			return type_create(TYPE_CHARACTER, 0, 0, 0);
-			break;
-		case EXPR_STRING:
-			return type_create(TYPE_STRING, 0, 0, 0);
-			break;
-		case EXPR_NAME:
-			if (e->symbol) return e->symbol->type;
-			return type_create(TYPE_VOID, 0, 0, 0);
-			break;
-		case EXPR_LBRACK:
-			left = expr_typecheck(e->left);
-			right = expr_typecheck(e->right);
-			if(right->kind == TYPE_INTEGER) {
-				return type_create(left->subtype->kind, 0, 0, 0);
-			} else {
-				printf("Cannot use ");
-				type_print(right);
-				printf(" as an array index. Must use an integer\n");
-				incrementErrors("t");
-                return type_create(left->subtype->kind, 0, 0, 0);
-			}
-			break;
-		case EXPR_ARRAY_LITERAL:
-			left = expr_typecheck(e->right->left);
-			return type_create(TYPE_ARRAY, 0, 0, left->subtype);
-			break;
-	}
-	return type_create(TYPE_VOID, 0, 0, 0);
-}
-
-
-
-
-
-*/
-
 
 
 
