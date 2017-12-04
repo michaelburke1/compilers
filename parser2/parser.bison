@@ -70,10 +70,10 @@ for use by scanner.c.
 };
 
 %type <decl> program decl_list decl
-%type <stmt> stmt stmt_list stmt_regular stmt_no_inner 
-%type <expr> expr expr_list expr_assign expr_array expr_brack expr_rarray expr_or expr_and expr_comp expr_as expr_md expr_expo expr_neg expr_preIncr expr_posIncr expr_group expr_values expr_bool expr_opt 
-%type <type> type
-%type <param_list> param_list param_list_n param
+%type <stmt> stmt stmt_list stmt_match stmt_list_n stmt_list2 //stmt_regular stmt_no_inner 
+%type <expr> expr expr_list expr_assign expr_or expr_and expr_comp expr_as expr_md expr_expo expr_neg expr_preIncr expr_posIncr expr_group expr_values expr_opt array_elements expr_list_array expr_list_n 
+%type <type> type type2
+%type <param_list> param_list param_list2 param_list_n 
 /*%type <symbol> ident*/
 %type <name> ident
 
@@ -114,16 +114,29 @@ struct decl *parser_result;
 
 /* Here is the grammar: program is the start symbol. */
 
+// good
 program     : decl_list
                 { parser_result = $1; return 0; }
             ;
-
+// good 
 decl_list   : decl decl_list
                 { $1->next = $2; $$ = $1; }
             |  
                 { $$ = 0; }
             ;
 
+// good
+decl        : ident TOKEN_COLON type TOKEN_EQUAL expr TOKEN_SEMI
+                { $$ = decl_create($1, $3, $5, 0, 0, 0); } 
+            | ident TOKEN_COLON TOKEN_ARRAY TOKEN_LBRACK TOKEN_RBRACK type2 TOKEN_EQUAL expr TOKEN_SEMI
+                { $$ = decl_create($1, type_create(TYPE_ARRAY, 0, 0, $6), $8, 0, 0, 0); }
+            | ident TOKEN_COLON type TOKEN_SEMI 
+                { $$ = decl_create($1, $3, 0, 0, 0, 0); }
+            | ident TOKEN_COLON type TOKEN_EQUAL TOKEN_LCURLY stmt_list TOKEN_RCURLY
+                { $$ = decl_create($1, $3, 0, $6, 0, 0); }  
+            ;
+
+/*
 decl        : ident TOKEN_COLON type TOKEN_SEMI
 	            { $$ = decl_create($1, $3, 0, 0, 0, 0); }
             | ident TOKEN_COLON type TOKEN_EQUAL expr TOKEN_SEMI
@@ -132,8 +145,68 @@ decl        : ident TOKEN_COLON type TOKEN_SEMI
                 { $$ = decl_create($1, $3, 0, $6, 0, 0); }
             | ident TOKEN_COLON type TOKEN_EQUAL TOKEN_LCURLY TOKEN_RCURLY
                 { $$ = decl_create($1, $3, 0, 0, 0, 1); }
+            | ident TOKEN_COLON TOKEN_ARRAY TOKEN_LBRACK TOKEN_RBRACK type2 TOKEN_EQUAL expr TOKEN_SEMI
+                { $$ = decl_create($1, $6, $8, 0, 0, 0); }
+            ;
+*/
+
+// good
+stmt        : decl
+                { $$ = stmt_create(STMT_DECL, $1, 0, 0, 0, 0, 0); }
+            | expr TOKEN_SEMI
+                { $$ = stmt_create(STMT_EXPR, 0, 0, $1, 0, 0, 0); }
+            | TOKEN_FOR TOKEN_LPAREN expr_opt TOKEN_SEMI expr_opt TOKEN_SEMI expr_opt TOKEN_RPAREN stmt
+                { $$ = stmt_create(STMT_FOR, 0, $3, $5, $7, $9, 0); }
+            | TOKEN_LCURLY stmt_list TOKEN_RCURLY
+                { $$ = stmt_create(STMT_BLOCK, 0, 0, 0, 0, $2, 0); } 
+            | TOKEN_IF TOKEN_LPAREN expr TOKEN_RPAREN stmt_match TOKEN_ELSE stmt
+                { $$ = stmt_create(STMT_IF_ELSE, 0, 0, $3, 0, $5, $7); }
+            | TOKEN_IF TOKEN_LPAREN expr TOKEN_RPAREN stmt 
+                { $$ = stmt_create(STMT_IF_ELSE, 0, 0, $3, 0, $5, 0); }
+            | TOKEN_RETURN expr_opt TOKEN_SEMI 
+                { $$ = stmt_create(STMT_RETURN, 0, $2, 0, 0, 0, 0); }
+            | TOKEN_PRINT expr_list TOKEN_SEMI
+                { $$ = stmt_create(STMT_PRINT, 0, 0, $2, 0, 0, 0); }
             ;
 
+// good
+stmt_match  : TOKEN_IF TOKEN_LPAREN expr TOKEN_RPAREN stmt_match TOKEN_ELSE stmt_match
+                { $$ = stmt_create(STMT_IF_ELSE, 0, 0, $3, 0, $5, $7); }
+            | TOKEN_RETURN expr_opt TOKEN_SEMI 
+                { $$ = stmt_create(STMT_RETURN, 0, $2, 0, 0, 0, 0); }
+            | TOKEN_PRINT expr_list TOKEN_SEMI
+                { $$ = stmt_create(STMT_PRINT, 0, 0, $2, 0, 0, 0); }
+            | TOKEN_LCURLY stmt_list TOKEN_RCURLY
+                { $$ = stmt_create(STMT_BLOCK, 0, 0, 0, 0, $2, 0); } 
+            | expr TOKEN_SEMI
+                { $$ = stmt_create(STMT_EXPR, 0, 0, $1, 0, 0, 0); }
+            | decl
+                { $$ = stmt_create(STMT_DECL, $1, 0, 0, 0, 0, 0); }
+            | TOKEN_FOR TOKEN_LPAREN expr_opt TOKEN_SEMI expr_opt TOKEN_SEMI expr_opt TOKEN_RPAREN stmt_match
+                { $$ = stmt_create(STMT_FOR, 0, $3, $5, $7, $9, 0); }
+            ;
+
+// good
+stmt_list   : stmt_list_n
+                { $$ = $1; }
+            |
+                { $$ = 0; } 
+            ;
+
+// good
+stmt_list_n : stmt // ;
+                { $$ = $1; }
+            | stmt_list2
+                { $$ = $1; }
+            ;
+
+// good
+stmt_list2  : stmt stmt_list_n
+                { $$ = $1; $1->next = $2; }
+            ;
+
+
+/*
 stmt        : stmt_no_inner
                 { $$ = $1; }
             | stmt_regular
@@ -169,52 +242,63 @@ stmt_list   : stmt stmt_list
             | stmt
                 { $$ = $1; }
             ;
+*/
 
+// good
+expr_list   : expr_list_n
+                { $$ = $1; }
+            |
+                { $$ = 0; } 
+            ;
+
+// good
+expr_list_n : expr TOKEN_COMMA expr_list_n
+                { $$ = expr_create(EXPR_EXPR_LIST, $1, $3); }
+            | expr
+                { $$ = $1; }
+            ;
+
+// good
+expr_list_array : expr_list_n
+                { $$ = $1; }
+            ;
+
+/*
 expr_list   : expr
                 { $$ = $1; }
             | expr TOKEN_COMMA expr_list
                 { $$ = expr_create(EXPR_COMMA, $1, $3); }
             ;
-
+*/
+// good
 expr	    : expr_assign
                 { $$ = $1; }
 	        ;
 
-expr_assign : ident TOKEN_EQUAL expr_assign
-                { $$ = expr_create(EXPR_EQUAL, expr_create_name($1), $3); }
-            | expr_array TOKEN_EQUAL expr_assign
+// good 
+expr_assign : expr TOKEN_EQUAL expr_assign
                 { $$ = expr_create(EXPR_EQUAL, $1, $3); }
+            // | expr_array TOKEN_EQUAL expr_assign
+            //     { $$ = expr_create(EXPR_EQUAL, $1, $3); }
             | expr_or
                 { $$ = $1; }
             ;
 
-expr_array  : ident TOKEN_LBRACK expr_rarray
-                { $$ = expr_create(EXPR_LBRACK, expr_create_name($1), $3); }
-            ;
-
-expr_rarray : expr TOKEN_RBRACK expr_brack
-                { $$ = expr_create(EXPR_RBRACK, $1, $3); }
-            ;
-
-
-expr_brack  : TOKEN_LBRACK expr TOKEN_RBRACK expr_brack
-                {$$ = expr_create(EXPR_BRACKS, $2, $4); }
-            | 
-                { $$ = 0; }
-            ;
-
+// good
 expr_or     : expr_or TOKEN_OR expr_and
                 { $$ = expr_create(EXPR_OR, $1, $3); }
             | expr_and
                 { $$ = $1; }
             ;
 
+// good
 expr_and    : expr_and TOKEN_AND expr_comp
                 { $$ = expr_create(EXPR_AND, $1, $3); }
             | expr_comp
                 { $$ = $1; }
             ;
 
+// good
 expr_comp   : expr_comp TOKEN_GT expr_as
                 { $$ = expr_create(EXPR_GT, $1, $3); }
             | expr_comp TOKEN_LT expr_as
@@ -231,6 +315,7 @@ expr_comp   : expr_comp TOKEN_GT expr_as
                 { $$ = $1; }
             ;
 
+// good
 expr_as     : expr_as TOKEN_ADD expr_md
                 { $$ = expr_create(EXPR_ADD, $1, $3); }
             | expr_as TOKEN_SUBTRACT expr_md
@@ -239,6 +324,7 @@ expr_as     : expr_as TOKEN_ADD expr_md
                 { $$ = $1; }
             ;
 
+// good
 expr_md     : expr_md TOKEN_MULTIPLY expr_expo
                  { $$ = expr_create(EXPR_MULT, $1, $3); } 
             | expr_md TOKEN_DIVIDE expr_expo
@@ -249,12 +335,14 @@ expr_md     : expr_md TOKEN_MULTIPLY expr_expo
                 { $$ = expr_create(EXPR_MOD, $1, $3); }
             ;
 
+// good
 expr_expo   : expr_expo TOKEN_CARAT expr_neg
                 { $$ = expr_create(EXPR_CARAT, $1, $3); }
             | expr_neg
                 { $$ = $1; }
             ;
 
+// good
 expr_neg    : TOKEN_SUBTRACT expr_neg
                 { $$ = expr_create(EXPR_NEG, 0, $2); }
             | TOKEN_NOT expr_neg
@@ -263,6 +351,7 @@ expr_neg    : TOKEN_SUBTRACT expr_neg
                 { $$ = $1; }
             ;
 
+// good
 expr_preIncr: TOKEN_INCREMENT expr_posIncr
                 { $$ = expr_create(EXPR_PRE_INCREMENT, 0, $2); }
             | TOKEN_DECREMENT expr_posIncr
@@ -271,6 +360,7 @@ expr_preIncr: TOKEN_INCREMENT expr_posIncr
                 { $$ = $1; }
             ;
 
+// good
 expr_posIncr: expr_group TOKEN_INCREMENT 
                 { $$ = expr_create(EXPR_POST_INCREMENT, $1, 0); }
             | expr_group TOKEN_DECREMENT 
@@ -279,7 +369,21 @@ expr_posIncr: expr_group TOKEN_INCREMENT
                 { $$ = $1; }
             ;
 
+// good
 expr_group  : TOKEN_LPAREN expr TOKEN_RPAREN
+                { $$ = expr_create(EXPR_GROUP, 0, $2); }
+            | ident
+                { $$ = expr_create_name($1); }
+            | ident TOKEN_LBRACK expr TOKEN_RBRACK array_elements
+                { $$ = expr_create(EXPR_ARRAY_IDENT, expr_create_name($1), expr_create(EXPR_ARRAY_ELEMENT, $3, $5)); }
+            | ident TOKEN_LPAREN expr_list TOKEN_RPAREN 
+                { $$ = expr_create(EXPR_FUNCTION, expr_create_name($1), $3); }
+            | TOKEN_LCURLY expr_list_array TOKEN_RCURLY
+                { $$ = expr_create(EXPR_ARRAY_LIST, 0, $2); }
+            | expr_values
+            ;
+
+/*expr_group  : TOKEN_LPAREN expr TOKEN_RPAREN
                 { $$ = expr_create(EXPR_GROUP, 0, $2); }
             | ident TOKEN_LPAREN TOKEN_RPAREN
                 { $$ = expr_create(EXPR_FUNCTION, expr_create_name($1), 0); }
@@ -292,11 +396,13 @@ expr_group  : TOKEN_LPAREN expr TOKEN_RPAREN
             | expr_values
                 { $$ = $1; }
             ;
-
+*/
+// good
 expr_values : TOKEN_CHAR_LITERAL
                 { 
-                    char *txt = replaceEscChars(yytext);
-                    $$ = expr_create_character_literal(txt[1]);
+                    //char *txt = replaceEscChars(yytext);
+                    //$$ = expr_create_character_literal(txt[1]);
+                    $$ = expr_create_character_literal(strdup(yytext));
                  }
             | TOKEN_DIGITS
                 {
@@ -309,33 +415,42 @@ expr_values : TOKEN_CHAR_LITERAL
                     strcpy(txt, yytext);
                     $$ = expr_create_string_literal(txt);
                 }
-            | ident 
-                { $$ = expr_create_name($1); }
-            | ident TOKEN_LBRACK expr_rarray
-                { $$ = expr_create(EXPR_LBRACK, expr_create_name($1), $3); }
-            | expr_bool
-                {$$ = $1; }
-            ;
-
-expr_bool   : TOKEN_TRUE
+            | TOKEN_TRUE
                 { $$ = expr_create_boolean_literal(1); }
             | TOKEN_FALSE
                 { $$ = expr_create_boolean_literal(0); }
             ;
 
+// good
 expr_opt    : expr
                 { $$ = $1; }
             | 
                 { $$ = 0; }
             ;
-
+// good
 type        : TOKEN_INTEGER
                 { $$ = type_create(TYPE_INTEGER, 0, 0, 0); }
             | TOKEN_CHAR
                 { $$ = type_create(TYPE_CHARACTER, 0, 0, 0); } 
             | TOKEN_STRING
                 { $$ = type_create(TYPE_STRING, 0, 0, 0); } 
-            | TOKEN_ARRAY TOKEN_LBRACK expr_opt TOKEN_RBRACK type
+            | TOKEN_ARRAY TOKEN_LBRACK expr TOKEN_RBRACK type
+                { $$ = type_create(TYPE_ARRAY, $3, 0, $5); } 
+            | TOKEN_BOOLEAN
+                { $$ = type_create(TYPE_BOOLEAN, 0, 0, 0); } 
+            | TOKEN_FUNCTION type2 TOKEN_LPAREN param_list TOKEN_RPAREN 
+                { $$ = type_create(TYPE_FUNCTION, 0, $4, $2); } 
+            | TOKEN_VOID
+                { $$ = type_create(TYPE_VOID, 0, 0, 0); } 
+            ;
+// good
+type2       : TOKEN_INTEGER
+                { $$ = type_create(TYPE_INTEGER, 0, 0, 0); }
+            | TOKEN_CHAR
+                { $$ = type_create(TYPE_CHARACTER, 0, 0, 0); } 
+            | TOKEN_STRING
+                { $$ = type_create(TYPE_STRING, 0, 0, 0); } 
+            | TOKEN_ARRAY TOKEN_LBRACK expr_opt TOKEN_RBRACK type2
                 { $$ = type_create(TYPE_ARRAY, $3, 0, $5); } 
             | TOKEN_BOOLEAN
                 { $$ = type_create(TYPE_BOOLEAN, 0, 0, 0); } 
@@ -344,23 +459,38 @@ type        : TOKEN_INTEGER
             | TOKEN_VOID
                 { $$ = type_create(TYPE_VOID, 0, 0, 0); } 
             ;
-
+// good
 param_list  : param_list_n
                 { $$ = $1; }
             |
                 { $$ = 0; }
             ;
-
-param_list_n: param TOKEN_COMMA param_list_n
-                { $1->next = $3; $$ = $1; }
-            | param
+// good
+param_list_n: ident TOKEN_COLON type2
+                { $$ = param_list_create($1, $3, 0); } 
+            | param_list2
                 { $$ = $1; }
             ;
 
+// good
+param_list2 : ident TOKEN_COLON type2 TOKEN_COMMA param_list_n
+                { $$ = param_list_create($1, $3, $5); }
+            ;
+
+// good
+array_elements: TOKEN_LBRACK expr TOKEN_RBRACK array_elements
+            {$$ = expr_create(EXPR_ARRAY_ELEMENT,$2,$4);}
+            |
+                { $$ = 0; }
+            ;
+
+/*
 param       : ident TOKEN_COLON type
                 { $$ = param_list_create($1, $3, 0); }
             ;
+*/
 
+// good 
 ident       : TOKEN_IDENTIFIER
                 { 
                     char *txt;
