@@ -4,7 +4,7 @@
 #include "decl.h"
 #include "param_list.h"
 #include <stdlib.h>
-
+#include <string.h>
 struct stmt * stmt_create( stmt_kind_t kind, struct decl *d, struct expr *init_expr, struct expr *e, struct expr *next_expr, struct stmt *body, struct stmt *else_body ) {
 
     struct stmt *s = malloc(sizeof(*s));
@@ -203,31 +203,68 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             decl_codegen(s->decl, file);
             break;
         case STMT_RETURN:
-            if (s->expr) {
+            if (s->init_expr) {
                 printf("in return, going into expr\n");
-                expr_codegen(s->expr, file);
+                expr_codegen(s->init_expr, file);
                 printf("expr done\n");
-                printf("doing move and scratch_name\nreg: %d\n", s->expr->Register);
-                fprintf(file,  "MOV %s, %%rax\n", scratch_name(s->expr->Register));
-                fprintf(file,  "JMP .idk what to do\n"); // needs to be fixed
+                printf("doing move and scratch_name\nreg: %d\n", s->init_expr->Register);
+                fprintf(file,  "MOV %s, %%rax\n", scratch_name(s->init_expr->Register));
                 printf("return freeing\n");
-                scratch_free(s->expr->Register);
+                scratch_free(s->init_expr->Register);
                 printf("return freed\n");
             }
             fprintf(file,  "JMP FUNCTION%d\n", getFunctionCount());
             break;
         case STMT_IF_ELSE:
+            printf("we ifing\n");
             else_label = label_create();
             done_label = label_create();
+            printf("labelcreated\n");
             expr_codegen(s->expr, file);
-            fprintf(file,  "CMP %s, $0\n", scratch_name(s->expr->Register));
+            printf("done expr in if\n");
+            fprintf(file,  "CMP $0, %s\n", scratch_name(s->expr->Register));
             scratch_free(s->expr->Register);
-            fprintf(file,  "JEQ %s\n",label_name(else_label));
-            stmt_codegen(s->body, file);
-            fprintf(file,  "JMP %s\n",label_name(done_label));
-            fprintf(file,  "%s:\n",label_name(else_label));
+            printf("label naming\n");
+            char label1[50];
+            label1[0] = '.'; 
+            label1[1] = 'L'; 
+            label1[2] = '\0';
+            char num[100];
+            sprintf(num, "%d", else_label);
+            strcat(label1, num);/*
+            if (else_label > 9) {
+                label1[2] = '0' + else_label / 10;
+                label1[3] = '0' + else_label % 10;
+                label1[4] = '\0';
+            } else {
+                label1[2] = '0' + else_label;
+                label1[3] = '\0';
+            }*/
+            
+            fprintf(file,  "JE %s\n", label1);
+            printf("$1st labe named\n");
+            stmt_codegen(s->body, file); 
+            
+            char label2[50];
+            label2[0] = '.'; 
+            label2[1] = 'L'; 
+            label2[2] = '0';
+            char num2[100];
+            sprintf(num2, "%d", done_label);
+            strcat(label2, num2);/*
+            if (done_label > 9) {
+                label2[2] = '0' + done_label / 10;
+                label2[3] = '0' + done_label % 10;
+                label2[4] = '\0';
+            } else {
+                label2[2] = '0' + done_label;
+                label2[3] = '\0';
+            }*/
+
+            fprintf(file,  "JMP %s\n",label2);
+            fprintf(file,  "%s:\n",label1);
             stmt_codegen(s->else_body, file);
-            fprintf(file,  "%s:\n",label_name(done_label));
+            fprintf(file,  "%s:\n",label2);
             break;
         case STMT_BLOCK:
             stmt_codegen(s->body, file);

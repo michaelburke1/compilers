@@ -96,7 +96,6 @@ int typecheck(char *file) {
         decl_resolve(parser_result);
         printf("%d resolve errors found\n",getErrors("r"));
         //printf("typecheckinggg");
-        initRegisters();
         decl_typecheck(parser_result);
         if (getErrors("t") > 0) {
             exit(1);

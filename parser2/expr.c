@@ -16,9 +16,9 @@ int argCount = 0;
 int arguments[10] = {0,0,0,0,0,0,0,0,0,0},cont[10] = {0,0,0,0,0,0,0,0,0,0};
 int labels = 0;
 
-struct reg registers[7];
+int registers[16] = {1,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0};;
 
-void initRegisters() {
+/*void initRegisters() {
     int i;
 
     for (i = 0; i < 7; ++i) {
@@ -38,7 +38,7 @@ void initRegisters() {
         printf("Name: %s\n", registers[i].name);
         printf("In Use: %d\n", registers[i].used);
     }
-}
+}*/
 
 struct expr * expr_create(expr_t kind, struct expr* left, struct expr *right) {
 
@@ -619,7 +619,7 @@ void expr_codegen(struct expr *e, FILE * file) {
                     symbol_codegen(e->symbol, file), 
                     scratch_name(e->Register));
             } else {
-                fprintf(file,  "MOVQ %s, %s\n", 
+                fprintf(file,  "  MOVQ %s, %s\n", 
                 symbol_codegen(e->symbol, file), 
                 scratch_name(e->Register));
             }
@@ -979,22 +979,47 @@ void checkParams(struct expr *e, struct param_list *p, const char *name) {
 
 int scratch_alloc() {
     int i;
-    for (i = 0; i < 7; ++i) {
-        if (!registers[i].used) {
-            registers[i].used = 1;
-            return registers[i].r;
+    for (i = 0; i < 16; ++i) {
+        if (!registers[i]) {
+            registers[i] = 1;
+            return i;
         }
     }
-
+    printf("Ran out of registers! no!\n");
     return -1;
 }
 
 void scratch_free(int r) {
-    registers[r].used = 0;
+    registers[r] = 0;
+    registers[0] = 1;
+    registers[2] = 1;    
+    registers[3] = 1;
+    registers[4] = 1;
+    registers[5] = 1;
+    registers[6] = 1;
+    registers[7] = 1;
+    registers[8] = 1;
+    registers[9] = 1;
 }
 
 const char * scratch_name(int r) {
-    return registers[r].name;
+    if(r == 0)return "%rax";
+    if(r == 1)return "%rbx";
+    if(r == 2)return "%rcx";
+    if(r == 3)return "%rdx";
+    if(r == 4)return "%rsi";
+    if(r == 5)return "%rdi";
+    if(r == 6)return "%rbp";
+    if(r == 7)return "%rsp";
+    if(r == 8)return "%r8";
+    if(r == 9)return "%r9";
+    if(r == 10)return "%r10";
+    if(r == 11)return "%r11";
+    if(r == 12)return "%r12";
+    if(r == 13)return "%r13";
+    if(r == 14)return "%r14";
+    if(r == 15)return "%r15";
+    return "";
 }
 
 int label_create() {
@@ -1002,13 +1027,24 @@ int label_create() {
 }
 
 const char * label_name(int label) {
-    char *tmp = "";
-    strcat(tmp, "'.L");
-    char tmpNum[15];
+    /*char *tmp = ".L";
+    char *tmpNum;
+    char ugh[100];
+
     sprintf(tmpNum, "%d", label);
-    strcat(tmp, tmpNum);
-    strcat(tmp, "'");
-    return tmp;
+    printf("sprintf worked\n");
+    printf("rnum:\n%d\n", label);
+    printf("num:\n%s\n", tmpNum);
+    printf("1st cat\n");
+    strcpy(ugh, tmp);
+    printf("2nd cat\n");
+    strcat(ugh, tmpNum);
+    strcat(ugh, "'");
+    printf("YEEEEETEEEEEETT:\n\n\n%s\n", ugh);
+    char *tmp1 = ugh;
+    printf("nonon:\n%s\n", tmp1);
+    return tmp1;*/
+    return "";
 }
 
 void findArgument(struct expr *e, struct nReg ** nR, FILE * file) {

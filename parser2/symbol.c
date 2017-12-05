@@ -39,10 +39,11 @@ const char * symbol_codegen(struct symbol *s, FILE * file) {
 		return s->name;
 	}
 
-	int bytes = s->localCount * 8;
+	int bytes = s->paramCount * 8;
 
 	if (bytes) {
-		int tmp = bytes, curr = 0;
+		instruction[0] = '-';
+        int tmp = bytes, curr = 0;
 		while (tmp > 0) {
 			vars[curr] = tmp % 10;
 			++curr;

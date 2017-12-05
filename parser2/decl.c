@@ -284,7 +284,7 @@ void decl_codegen(struct decl *d, FILE * file) {
         expr_codegen(d->value, file);
         fprintf(file,  "  MOVQ %s,-%d(%%rbp)\n",
             scratch_name(d->value->Register),
-            d->symbol->localCount * 8);
+            d->symbol->paramCount * 8);
         scratch_free(d->value->Register);
     }
 

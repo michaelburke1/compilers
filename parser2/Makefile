@@ -11,7 +11,9 @@ parser.c parser.h: parser.bison
 	bison --defines=parser.h --output=parser.c -v parser.bison 
 
 clean:
-	rm -f *.s *.o cminor lex.yy.c parse.tab.* parser.output 
+	rm -f *.s *.o cminor lex.yy.c parse.tab.* parser.output sourcefile
 
 
-
+assemble:
+	/usr/bin/gcc -c sourcefile.s -o sourcefile.o
+	/usr/bin/gcc sourcefile.o library.o -o sourcefile

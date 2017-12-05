@@ -81,7 +81,7 @@ struct type * expr_typecheck(struct expr * e);
 void expr_codegen(struct expr *e, FILE * file);
 void expr_print( struct expr *e );
 void checkParams(struct expr *e, struct param_list *p, const char *name);
-void initRegisters();
+//void initRegisters();
 int scratch_alloc();
 void scratch_free(int r);
 const char * scratch_name(int r);
