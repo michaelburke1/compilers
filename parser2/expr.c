@@ -615,11 +615,11 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_NAME:
             e->Register = scratch_alloc();
             if (e->symbol->kind == SYMBOL_LOCAL && e->symbol->type->kind == TYPE_STRING) {
-                fprintf(file,  "  LEAQ %s,%s\n",
+                fprintf(file,  "\tLEAQ %s,%s\n",
                     symbol_codegen(e->symbol, file), 
                     scratch_name(e->Register));
             } else {
-                fprintf(file,  "  MOVQ %s, %s\n", 
+                fprintf(file,  "\tMOVQ %s, %s\n", 
                 symbol_codegen(e->symbol, file), 
                 scratch_name(e->Register));
             }
@@ -644,27 +644,27 @@ void expr_codegen(struct expr *e, FILE * file) {
             break;
         case EXPR_NEG:
             expr_codegen(e->right, file);
-            fprintf(file,  "  MOVEQ $-1, %%rax\n");
-            fprintf(file, "  IMULQ %s\n", scratch_name(e->right->Register));      
-            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->right->Register));
+            fprintf(file,  "\tMOVEQ $-1, %%rax\n");
+            fprintf(file, "\tIMULQ %s\n", scratch_name(e->right->Register));      
+            fprintf(file, "\tMOVQ %%rax,%s\n", scratch_name(e->right->Register));
             e->Register = e->right->Register;
             break;
         case EXPR_MULT:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  MOVQ %s,%%rax\n", scratch_name(e->left->Register));
-            fprintf(file, "  IMULQ %s\n", scratch_name(e->right->Register));      
-            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ %s,%%rax\n", scratch_name(e->left->Register));
+            fprintf(file, "\tIMULQ %s\n", scratch_name(e->right->Register));      
+            fprintf(file, "\tMOVQ %%rax,%s\n", scratch_name(e->right->Register));
             scratch_free(e->left->Register);
             e->Register = e->right->Register;
             break;
         case EXPR_DIVIDE:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  MOVQ %s,%%rax\n", scratch_name(e->left->Register));
-            fprintf(file, "  CDQ\n");
-            fprintf(file, "  IDIVQ %s\n", scratch_name(e->right->Register));
-            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ %s,%%rax\n", scratch_name(e->left->Register));
+            fprintf(file, "\tCDQ\n");
+            fprintf(file, "\tIDIVQ %s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ %%rax,%s\n", scratch_name(e->right->Register));
             scratch_free(e->left->Register);
             e->Register = e->right->Register;
             break;
@@ -675,7 +675,7 @@ void expr_codegen(struct expr *e, FILE * file) {
                     scratch_name(e->right->Register),
                     symbol_codegen(e->left->symbol, file));
             } else {
-                fprintf(file,  "  MOVQ %s,%s\n", 
+                fprintf(file,  "\tMOVQ %s,%s\n", 
                     scratch_name(e->right->Register), 
                     symbol_codegen(e->left->right->symbol, file));
                 expr_codegen(e->left, file);
@@ -686,46 +686,46 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_MOD:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  MOVQ %s,%%rax\n", scratch_name(e->left->Register));
-            fprintf(file, "  cdq\n");
-            fprintf(file, "  idivq %s\n", scratch_name(e->right->Register));
-            fprintf(file, "  MOVQ %%rdx,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ %s,%%rax\n", scratch_name(e->left->Register));
+            fprintf(file, "\tcdq\n");
+            fprintf(file, "\tidivq %s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ %%rdx,%s\n", scratch_name(e->right->Register));
             scratch_free(e->left->Register);
             e->Register = e->right->Register;
             break;
         case EXPR_PRE_INCREMENT:
             expr_codegen(e->right, file);
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
-            fprintf(file, "  addq $1,%s\n", scratch_name(e->right->Register));     
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
+            fprintf(file, "\taddq $1,%s\n", scratch_name(e->right->Register));     
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
             break;
         case EXPR_PRE_DECREMENT:
             expr_codegen(e->left, file);
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
-            fprintf(file, "  subq $1,%s\n", scratch_name(e->right->Register));     
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
+            fprintf(file, "\tsubq $1,%s\n", scratch_name(e->right->Register));     
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
             break;
         case EXPR_POST_INCREMENT:
             expr_codegen(e->left, file);
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
-            fprintf(file, "  addq $1,%s\n", scratch_name(e->left->Register));     
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
+            fprintf(file, "\taddq $1,%s\n", scratch_name(e->left->Register));     
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
             break;
         case EXPR_POST_DECREMENT:
             expr_codegen(e->left, file);
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
-            fprintf(file, "  subq $1,%s\n", scratch_name(e->left->Register));     
-            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
+            fprintf(file, "\tsubq $1,%s\n", scratch_name(e->left->Register));     
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
             break;
         case EXPR_LT:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
-            fprintf(file, "  JL R%d\n", loopCount);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n", loopCount+1);
+            fprintf(file, "\tCMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "\tJL R%d\n", loopCount);
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n", loopCount+1);
             fprintf(file, "R%d:\n", loopCount);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n", loopCount+1);
             e->Register = e->right->Register;
             scratch_free(e->left->Register);    
@@ -734,12 +734,12 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_GT:                       //nao se esqueca de testar todos os reloaps
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  cmp %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
-            fprintf(file, "  jg R%d\n",loopCount); // diferenca entre JMP e jl
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "\tcmp %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "\tjg R%d\n",loopCount); // diferenca entre JMP e jl
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount+1);
             fprintf(file, "R%d:\n",loopCount);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount+1);
             e->Register = e->right->Register;
             scratch_free(e->left->Register); 
@@ -748,12 +748,12 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_LE:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
-            fprintf(file, "  JLE R%d\n",loopCount);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "\tCMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "\tJLE R%d\n",loopCount);
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount+1);
             fprintf(file, "R%d:\n",loopCount);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount+1);
             e->Register = e->right->Register;
             scratch_free(e->left->Register); 
@@ -762,12 +762,12 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_GE:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
-            fprintf(file, "  JGE R%d\n",loopCount);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "\tCMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "\tJGE R%d\n",loopCount);
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount+1);
             fprintf(file, "R%d:\n",loopCount);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount+1);
             e->Register = e->right->Register;
             scratch_free(e->left->Register); 
@@ -776,12 +776,12 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_EQUIV:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
-            fprintf(file, "  JE R%d\n",loopCount);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "\tCMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "\tJE R%d\n",loopCount);
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount+1);
             fprintf(file, "R%d:\n",loopCount);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount+1);
             scratch_free(e->left->Register);
             e->Register = e->right->Register;
@@ -790,12 +790,12 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_NOT_EQUAL:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
-            fprintf(file, "  JE R%d\n",loopCount);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "\tCMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "\tJE R%d\n",loopCount);
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount+1);
             fprintf(file, "R%d:\n",loopCount);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount+1);
             scratch_free(e->left->Register);
             e->Register = e->right->Register;
@@ -804,14 +804,14 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_AND:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP $0,%s\n", scratch_name(e->left->Register));
-            fprintf(file, "  JE R%d\n",loopCount+1);
-            fprintf(file, "  CMP $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JE R%d\n",loopCount+1);   
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount);
+            fprintf(file, "\tCMP $0,%s\n", scratch_name(e->left->Register));
+            fprintf(file, "\tJE R%d\n",loopCount+1);
+            fprintf(file, "\tCMP $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJE R%d\n",loopCount+1);   
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount);
             fprintf(file, "R%d:\n",loopCount+1);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount);
             e->Register = e->right->Register;
             scratch_free(e->left->Register); 
@@ -820,14 +820,14 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_OR:
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP $1,%s\n", scratch_name(e->left->Register));
-            fprintf(file, "  JE R%d\n",loopCount+1);
-            fprintf(file, "  CMP $1,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JE R%d\n",loopCount+1);   
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JMP R%d\n",loopCount);
+            fprintf(file, "\tCMP $1,%s\n", scratch_name(e->left->Register));
+            fprintf(file, "\tJE R%d\n",loopCount+1);
+            fprintf(file, "\tCMP $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJE R%d\n",loopCount+1);   
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount);
             fprintf(file, "R%d:\n",loopCount+1);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->right->Register));
             fprintf(file, "R%d:\n",loopCount);
             loopCount+=2;
             break;
@@ -835,26 +835,26 @@ void expr_codegen(struct expr *e, FILE * file) {
             expr_codegen(e->left, file);
             expr_codegen(e->right, file);
             e->Register = scratch_alloc();
-            fprintf(file, "  PUSHQ %%r10\n");
-            fprintf(file, "  PUSHQ %%r11\n");
-            fprintf(file, "  MOVQ %s,%%rdi\n", scratch_name(e->left->Register));
-            fprintf(file, "  MOVQ %s,%%rsi\n", scratch_name(e->right->Register));
-            fprintf(file, "  CALL integer_power\n");
-            fprintf(file, "  POPQ %%r11\n");
-            fprintf(file, "  POPQ %%r10\n");
-            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->Register));
+            fprintf(file, "\tPUSHQ %%r10\n");
+            fprintf(file, "\tPUSHQ %%r11\n");
+            fprintf(file, "\tMOVQ %s,%%rdi\n", scratch_name(e->left->Register));
+            fprintf(file, "\tMOVQ %s,%%rsi\n", scratch_name(e->right->Register));
+            fprintf(file, "\tCALL integer_power\n");
+            fprintf(file, "\tPOPQ %%r11\n");
+            fprintf(file, "\tPOPQ %%r10\n");
+            fprintf(file, "\tMOVQ %%rax,%s\n", scratch_name(e->Register));
             scratch_free(e->left->Register);
             scratch_free(e->right->Register);   
             break;
         case EXPR_NOT:
             e->Register = scratch_alloc();
             expr_codegen(e->right, file);
-            fprintf(file, "  CMP $1,%s\n", scratch_name(e->right->Register));
-            fprintf(file, "  JE R%d\n",loopCount+1);
-            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->Register));
-            fprintf(file, "  JMP R%d\n",loopCount);
-            fprintf(file, "  R%d:\n",loopCount+1);
-            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->Register));
+            fprintf(file, "\tCMP $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "\tJE R%d\n",loopCount+1);
+            fprintf(file, "\tMOVQ $1,%s\n", scratch_name(e->Register));
+            fprintf(file, "\tJMP R%d\n",loopCount);
+            fprintf(file, "\tR%d:\n",loopCount+1);
+            fprintf(file, "\tMOVQ $0,%s\n", scratch_name(e->Register));
             fprintf(file, "R%d:\n",loopCount);
             scratch_free(e->right->Register);
             loopCount+=1;
@@ -871,32 +871,32 @@ void expr_codegen(struct expr *e, FILE * file) {
             
             findArgument(e->right, &nR, file);
             
-            fprintf(file, "  PUSHQ %%r10\n");
-            fprintf(file, "  PUSHQ %%r11\n");
+            fprintf(file, "\tPUSHQ %%r10\n");
+            fprintf(file, "\tPUSHQ %%r11\n");
             argCount = 0;
             while(nR) {
                 if(argCount == 0){
-                    fprintf(file, "  MOVQ %s,%%rdi\n", scratch_name(nR->Register));
+                    fprintf(file, "\tMOVQ %s,%%rdi\n", scratch_name(nR->Register));
                     scratch_free(nR->Register);
                 }
                 if(argCount == 1){
-                    fprintf(file, "  MOVQ %s,%%rsi\n", scratch_name(nR->Register));
+                    fprintf(file, "\tMOVQ %s,%%rsi\n", scratch_name(nR->Register));
                     scratch_free(nR->Register);
                 }
                 if(argCount == 2){
-                    fprintf(file, "  MOVQ %s,%%rdx\n", scratch_name(nR->Register));
+                    fprintf(file, "\tMOVQ %s,%%rdx\n", scratch_name(nR->Register));
                     scratch_free(nR->Register);
                 }
                 if(argCount == 3){
-                    fprintf(file, "  MOVQ %s,%%rcx\n", scratch_name(nR->Register));
+                    fprintf(file, "\tMOVQ %s,%%rcx\n", scratch_name(nR->Register));
                     scratch_free(nR->Register);  
                 }
                 if(argCount == 4){
-                    fprintf(file, "  MOVQ %s,%%r8\n", scratch_name(nR->Register));
+                    fprintf(file, "\tMOVQ %s,%%r8\n", scratch_name(nR->Register));
                     scratch_free(nR->Register);  
                 }
                 if(argCount == 5){
-                    fprintf(file, "  MOVQ %s,%%r9\n", scratch_name(nR->Register)); 
+                    fprintf(file, "\tMOVQ %s,%%r9\n", scratch_name(nR->Register)); 
                     scratch_free(nR->Register);
                 }
                 if(argCount>5){
@@ -906,10 +906,10 @@ void expr_codegen(struct expr *e, FILE * file) {
                 argCount++;
                 nR = nR->next;
             }
-            fprintf(file, "  CALL %s\n",e->left->name);
-            fprintf(file, "  POPQ %%r11\n");
-            fprintf(file, "  POPQ %%r10\n");
-            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->Register));
+            fprintf(file, "\tCALL %s\n",e->left->name);
+            fprintf(file, "\tPOPQ %%r11\n");
+            fprintf(file, "\tPOPQ %%r10\n");
+            fprintf(file, "\tMOVQ %%rax,%s\n", scratch_name(e->Register));
             h = getInit();
             argCount = 0;
             type = hash_table_lookup(h, e->left->name);
@@ -919,15 +919,15 @@ void expr_codegen(struct expr *e, FILE * file) {
             break;
         case EXPR_INTEGER:
             e->Register = scratch_alloc();
-            fprintf(file, "  MOVQ $%d,%s\n",e->literal_value, scratch_name(e->Register));
+            fprintf(file, "\tMOVQ $%d,%s\n",e->literal_value, scratch_name(e->Register));
             break;
         case EXPR_BOOLEAN:
             e->Register = scratch_alloc();
-            fprintf(file, "  MOVQ $%d,%s\n",e->literal_value, scratch_name(e->Register));
+            fprintf(file, "\tMOVQ $%d,%s\n",e->literal_value, scratch_name(e->Register));
             break;
         case EXPR_CHARACTER:
             e->Register = scratch_alloc();
-            fprintf(file, "  MOVQ $%s,%s\n",e->string_literal, scratch_name(e->Register));
+            fprintf(file, "\tMOVQ $%s,%s\n",e->string_literal, scratch_name(e->Register));
         break;
         case EXPR_STRING:
             e->Register = scratch_alloc();

@@ -281,8 +281,8 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             if (s->expr) {
                 expr_codegen(s->expr, file);
                 scratch_free(s->expr->Register);
-                fprintf(file, "  cmp $0,%s\n", scratch_name(s->expr->Register));
-                fprintf(file, "   JE FOR\n");
+                fprintf(file, "\tcmp $0,%s\n", scratch_name(s->expr->Register));
+                fprintf(file, "\tJE FOR\n");
                 printf("scratching freeing\n");
                 scratch_free(s->expr->Register);
             }
@@ -290,7 +290,7 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             stmt_codegen(s->body, file);
             printf("expr cging\n");
             expr_codegen(s->next_expr, file);
-            fprintf(file, "  JMP FOR\nFOR:");
+            fprintf(file, "\tJMP FOR\nFOR:");
             break;
         case STMT_PRINT:
             printStmt(s->expr, file);
@@ -315,25 +315,25 @@ void printStmt(struct expr *e, FILE * file) {
     }
     expr_codegen(e, file);
 
-    fprintf(file,  "  PUSHQ %%r10\n");
-    fprintf(file,  "  PUSHQ %%r11\n");
-    fprintf(file,  "  MOVQ %s,%%rdi\n", scratch_name(e->Register));
+    fprintf(file,  "\tPUSHQ %%r10\n");
+    fprintf(file,  "\tPUSHQ %%r11\n");
+    fprintf(file,  "\tMOVQ %s,%%rdi\n", scratch_name(e->Register));
 
     if (expr_typecheck(e)->kind  == TYPE_INTEGER) {
-        fprintf(file, "  CALL print_integer\n");
+        fprintf(file, "\tCALL print_integer\n");
     }
     else if (expr_typecheck(e)->kind  == TYPE_STRING) {
         fprintf(file, " CALL print_string\n");
     }
     else if (expr_typecheck(e)->kind  == TYPE_BOOLEAN) {
-        fprintf(file, "    CALL print_boolean\n");
+        fprintf(file, "\t  CALL print_boolean\n");
     }
     else if (expr_typecheck(e)->kind  == TYPE_CHARACTER) {
-            fprintf(file, "  CALL print_character\n");
+            fprintf(file, "\tCALL print_character\n");
     }
 
-    fprintf(file,  "  POPQ %%r11\n");
-    fprintf(file,  "  POPQ %%r10\n");
+    fprintf(file,  "\tPOPQ %%r11\n");
+    fprintf(file,  "\tPOPQ %%r10\n");
     scratch_free(e->Register);
 }
 

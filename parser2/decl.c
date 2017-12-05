@@ -225,7 +225,7 @@ void decl_codegen(struct decl *d, FILE * file) {
                     printf("wrote to file!\n");
                     struct param_list *p = d->type->params;
                     printf("params set\n");
-                    fprintf(file,  "  PUSHQ %%rbp\n   MOVQ  %%rsp, %%rbp\n");
+                    fprintf(file,  "\tPUSHQ %%rbp\n   MOVQ  %%rsp, %%rbp\n");
                     int pCount = 0;
 
                     while (p) {
@@ -234,46 +234,46 @@ void decl_codegen(struct decl *d, FILE * file) {
                     }
                     printf("checking pcount\n");
                     if (pCount >= 1) {
-                        fprintf(file,  "  PUSHQ %%rdi\n");
+                        fprintf(file,  "\tPUSHQ %%rdi\n");
                     }
                     if(pCount >= 2){
-                        fprintf(file,  "  PUSHQ %%rsi\n");
+                        fprintf(file,  "\tPUSHQ %%rsi\n");
                     }
                     if(pCount >= 3){
-                        fprintf(file,  "  PUSHQ %%rdx\n");
+                        fprintf(file,  "\tPUSHQ %%rdx\n");
                     }
                     if(pCount >= 4){
-                        fprintf(file,  "  PUSHQ %%rcx\n");
+                        fprintf(file,  "\tPUSHQ %%rcx\n");
                     }
                     if(pCount >= 5){
-                        fprintf(file,  "  PUSHQ %%r8\n");
+                        fprintf(file,  "\tPUSHQ %%r8\n");
                     }
                     if(pCount == 6){
-                        fprintf(file,  "  PUSHQ %%r9\n");
+                        fprintf(file,  "\tPUSHQ %%r9\n");
                     }
                     if(d->symbol->localCount > 0){        
                         printf("setting localCount\n");
-                        fprintf(file,  "  subq $%d,%%rsp\n", d->symbol->localCount*8);
+                        fprintf(file,  "\tsubq $%d,%%rsp\n", d->symbol->localCount*8);
                     }
                     printf("local count set\n");
-                    fprintf(file,  "  PUSHQ %%rbx\n");
-                    fprintf(file,  "  PUSHQ %%r12\n");
-                    fprintf(file,  "  PUSHQ %%r13\n");
-                    fprintf(file,  "  PUSHQ %%r14\n");
-                    fprintf(file,  "  PUSHQ %%r15\n\n");      
+                    fprintf(file,  "\tPUSHQ %%rbx\n");
+                    fprintf(file,  "\tPUSHQ %%r12\n");
+                    fprintf(file,  "\tPUSHQ %%r13\n");
+                    fprintf(file,  "\tPUSHQ %%r14\n");
+                    fprintf(file,  "\tPUSHQ %%r15\n\n");      
                     printf("going into stmt cg\n");
                     stmt_codegen(d->code, file);
                     printf("out of stmtcg\n");
                     fprintf(file,  "FUNCTION%d:\n", getFunctionCount());
                     fprintf(file,  "\n");
-                    fprintf(file,  "  POPQ %%r15\n");
-                    fprintf(file,  "  POPQ %%r14\n");
-                    fprintf(file,  "  POPQ %%r13\n");
-                    fprintf(file,  "  POPQ %%r12\n");
-                    fprintf(file,  "  POPQ %%rbx\n");
-                    fprintf(file,  "  MOVQ %%rbp,%%rsp\n");
-                    fprintf(file,  "  POPQ %%rbp\n");
-                    fprintf(file,  "  ret\n");
+                    fprintf(file,  "\tPOPQ %%r15\n");
+                    fprintf(file,  "\tPOPQ %%r14\n");
+                    fprintf(file,  "\tPOPQ %%r13\n");
+                    fprintf(file,  "\tPOPQ %%r12\n");
+                    fprintf(file,  "\tPOPQ %%rbx\n");
+                    fprintf(file,  "\tMOVQ %%rbp,%%rsp\n");
+                    fprintf(file,  "\tPOPQ %%rbp\n");
+                    fprintf(file,  "\tret\n");
                     incrementFunctionCount();
                     printf("finctuon if ending!\n");
                 }
@@ -282,7 +282,7 @@ void decl_codegen(struct decl *d, FILE * file) {
     } else if (d->symbol->kind == SYMBOL_LOCAL && d->value) {
         printf("symbol kind is local and d->value\n");
         expr_codegen(d->value, file);
-        fprintf(file,  "  MOVQ %s,-%d(%%rbp)\n",
+        fprintf(file,  "\tMOVQ %s,-%d(%%rbp)\n",
             scratch_name(d->value->Register),
             d->symbol->paramCount * 8);
         scratch_free(d->value->Register);
