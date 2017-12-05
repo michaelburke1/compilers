@@ -2130,7 +2130,7 @@ yyreduce:
 
   case 95:
 #line 470 "parser.bison"
-    { (yyval.param_list) = param_list_create((yyvsp[(1) - (3)].name), 0, (yyvsp[(3) - (3)].type)); ;}
+    { (yyval.param_list) = param_list_create((yyvsp[(1) - (3)].name), (yyvsp[(3) - (3)].type), 0); ;}
     break;
 
   case 96:
@@ -2140,7 +2140,7 @@ yyreduce:
 
   case 97:
 #line 477 "parser.bison"
-    { (yyval.param_list) = param_list_create((yyvsp[(1) - (5)].name), (yyvsp[(5) - (5)].param_list), (yyvsp[(3) - (5)].type)); ;}
+    { (yyval.param_list) = param_list_create((yyvsp[(1) - (5)].name), (yyvsp[(3) - (5)].type), (yyvsp[(5) - (5)].param_list)); ;}
     break;
 
   case 98:
