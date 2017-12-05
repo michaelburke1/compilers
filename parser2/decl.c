@@ -93,7 +93,7 @@ void decl_resolve( struct decl *d )
     
     if (scope_level() > 1) {
         kind = SYMBOL_LOCAL;
-        incrementParamCount; incrementLocalCount;
+        incrementParamCount(); incrementLocalCount();
     } else {
         kind = SYMBOL_GLOBAL;
     }
