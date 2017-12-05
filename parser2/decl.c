@@ -14,6 +14,9 @@ int resolveErrors = 0;
 int checkErrors = 0;
 struct hash_table * initTable = NULL;
 int const_expr = 0;
+int paramCount = 0;
+int localCount = 0;
+int functionCount = 0; 
 
 
 int incrementErrors(const char * s) {
@@ -185,7 +188,81 @@ void decl_codegen(struct decl *d, FILE * file) {
         return;
     }
 
-    printf("doing stuff\n");
+    if (d->symbol->kind == SYMBOL_GLOBAL) {
+        if (d->type->kind != TYPE_FUNCTION && !d->value && !d->code) {
+            if (d->type->kind != TYPE_STRING) {
+                fprintf(file,  ".data\n%s: .quad 0\n", d->name);
+            } else {
+                fprintf(file,  ".data\n.global %s\n%s:\n  .string \"\" \n", d->name, d->name);
+            }
+        } else {
+            if (d->type->kind != TYPE_FUNCTION && d->value) {
+                if (d->type->kind == TYPE_STRING) {
+                    fprintf(file,  ".data\n.global %s\n%s:\n  .string ""%s""\n", d->name, d->name, d->value->string_literal);
+                } else {
+                    fprintf(file,  ".data\n.global %s\n%s:\n  .quad %d\n", d->name, d->name, d->value->literal_value);
+                }
+            } else if (d->type->kind == TYPE_FUNCTION) {
+                if (d->code) {
+                    fprintf(file,  ".text\n.global %s\n%s:\n", d->name, d->name);
+                    struct param_list *p = d->type->params;
+                    fprintf(file,  "  PUSHQ %%rbp\n   MOVQ  %%rsp, %%rbp\n");
+                    int pCount = 0;
+
+                    while (p) {
+                        p = p->next;
+                        pCount++;
+                    }
+
+                    if (pCount >= 1) {
+                        fprintf(file,  "  PUSHQ %%rdi\n");
+                    }
+                    if(pCount >= 2){
+                        fprintf(file,  "  PUSHQ %%rsi\n");
+                    }
+                    if(pCount >= 3){
+                        fprintf(file,  "  PUSHQ %%rdx\n");
+                    }
+                    if(pCount >= 4){
+                        fprintf(file,  "  PUSHQ %%rcx\n");
+                    }
+                    if(pCount >= 5){
+                        fprintf(file,  "  PUSHQ %%r8\n");
+                    }
+                    if(pCount == 6){
+                        fprintf(file,  "  PUSHQ %%r9\n");
+                    }
+                    if(d->symbol->localCount > 0){        
+                        fprintf(file,  "  subq $%d,%%rsp\n", d->symbol->localCount*8);
+                    }
+
+                    fprintf(file,  "  PUSHQ %%rbx\n");
+                    fprintf(file,  "  PUSHQ %%r12\n");
+                    fprintf(file,  "  PUSHQ %%r13\n");
+                    fprintf(file,  "  PUSHQ %%r14\n");
+                    fprintf(file,  "  PUSHQ %%r15\n\n");      
+                    stmt_codegen(d->code, file);
+                    fprintf(file,  "FUNCTION%d:\n", getFunctionCount());
+                    fprintf(file,  "\n");
+                    fprintf(file,  "  POPQ %%r15\n");
+                    fprintf(file,  "  POPQ %%r14\n");
+                    fprintf(file,  "  POPQ %%r13\n");
+                    fprintf(file,  "  POPQ %%r12\n");
+                    fprintf(file,  "  POPQ %%rbx\n");
+                    fprintf(file,  "  MOVQ %%rbp,%%rsp\n");
+                    fprintf(file,  "  POPQ %%rbp\n");
+                    fprintf(file,  "  ret\n");
+                    incrementFunctionCount();
+                }
+            }
+        }
+    } else if (d->symbol->kind == SYMBOL_LOCAL && d->value) {
+        expr_codegen(d->value, file);
+        fprintf(file,  "  MOVQ %s,-%d(%%rbp)\n",
+            scratch_name(d->value->Register),
+            d->symbol->localCount * 8);
+        scratch_free(d->value->Register);
+    }
 
     decl_codegen(d->next, file);
 }
@@ -226,4 +303,24 @@ void expr_constant(struct expr *e)
 
 struct hash_table * getInit() {
     return initTable;
+}
+
+void incrementParamCount() {
+    paramCount++;
+}
+void incrementLocalCount() {
+    localCount++;
+}
+void incrementFunctionCount() {
+    functionCount++;
+}
+int getParamCount() {
+    return paramCount;
+}
+int getCountCount() {
+    return localCount;
+}
+
+int getFunctionCount() {
+    return functionCount;
 }

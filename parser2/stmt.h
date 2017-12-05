@@ -2,6 +2,7 @@
 #define STMT_H
 
 #include "decl.h"
+#include <stdio.h>
 
 typedef enum {
 	STMT_DECL,
@@ -29,5 +30,6 @@ struct stmt * stmt_create( stmt_kind_t kind, struct decl *d, struct expr *init_e
 void stmt_print( struct stmt *s, int indent );
 struct stmt * stmt_resolve(struct stmt *s);
 void stmt_typecheck(struct stmt *s, struct type *subtype);
-void stmt_codegen(struct stmt *s);
+void stmt_codegen(struct stmt *s, FILE * file);
+void printStmt(struct expr *e, FILE * file);
 #endif

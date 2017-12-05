@@ -185,15 +185,108 @@ void stmt_typecheck(struct stmt *s, struct type *subtype) {
     stmt_typecheck(s->next, subtype);
 }
 
-void stmt_codegen(struct stmt *s) {
+void stmt_codegen(struct stmt *s, FILE * file) {
 
     if (!s) {
         return; 
     }
 
-    stmt_codegen(s->next);
+    int else_label, done_label;
+
+    switch(s->kind) {
+        case STMT_EXPR:
+            expr_codegen(s->expr, file);
+            scratch_free(s->expr->Register);
+            break;
+        case STMT_DECL:
+            decl_codegen(s->decl, file);
+            break;
+        case STMT_RETURN:
+            expr_codegen(s->expr, file);
+            fprintf(file,  "MOV %s, %%rax\n", scratch_name(s->expr->Register));
+            fprintf(file,  "JMP .%s_epilogue\n", "uhhhh");
+            scratch_free(s->expr->Register);
+            break;
+        case STMT_IF_ELSE:
+            else_label = label_create();
+            done_label = label_create();
+            expr_codegen(s->expr, file);
+            fprintf(file,  "CMP %s, $0\n", scratch_name(s->expr->Register));
+            scratch_free(s->expr->Register);
+            fprintf(file,  "JEQ %s\n",label_name(else_label));
+            stmt_codegen(s->body, file);
+            fprintf(file,  "JMP %s\n",label_name(done_label));
+            fprintf(file,  "%s:\n",label_name(else_label));
+            stmt_codegen(s->else_body, file);
+            fprintf(file,  "%s:\n",label_name(done_label));
+            break;
+        case STMT_BLOCK:
+            stmt_codegen(s->body, file);
+            break;
+        case STMT_FOR:
+        expr_resolve(s->init_expr); expr_resolve(s->expr); expr_resolve(s->next_expr);
+            stmt_resolve(s->body);
+            if (s->init_expr) {
+                expr_codegen(s->init_expr, file);
+                scratch_free(s->init_expr->Register);
+            }
+            fprintf(file,  "FOR: \n");
+
+            if (s->expr) {
+                expr_codegen(s->expr, file);
+                scratch_free(s->expr->Register);
+                fprintf(file, "  cmp $0,%s\n", scratch_name(s->expr->Register));
+                fprintf(file, "   JE FOR\n");
+                scratch_free(s->expr->Register);
+            }
+            stmt_codegen(s->body, file);
+            expr_codegen(s->next_expr, file);
+            fprintf(file, "  JMP FOR\nFOR:");
+            break;
+        case STMT_PRINT:
+            printStmt(s->expr, file);
+            break;
+        default:
+            break;
+    }
+
+    stmt_codegen(s->next, file);
 }
 
+void printStmt(struct expr *e, FILE * file) {
+  
+    if (!e) {
+        return;
+    }
+
+    if (e->kind == EXPR_EXPR_LIST) {
+        printStmt(e->left, file);
+        printStmt(e->right, file);
+        return;
+    }
+    expr_codegen(e, file);
+
+    fprintf(file,  "  PUSHQ %%r10\n");
+    fprintf(file,  "  PUSHQ %%r11\n");
+    fprintf(file,  "  MOVQ %s,%%rdi\n", scratch_name(e->Register));
+
+    if (expr_typecheck(e)->kind  == TYPE_INTEGER) {
+        fprintf(file, "  CALL print_integer\n");
+    }
+    else if (expr_typecheck(e)->kind  == TYPE_STRING) {
+        fprintf(file, " CALL print_string\n");
+    }
+    else if (expr_typecheck(e)->kind  == TYPE_BOOLEAN) {
+        fprintf(file, "    CALL print_boolean\n");
+    }
+    else if (expr_typecheck(e)->kind  == TYPE_CHARACTER) {
+            fprintf(file, "  CALL print_character\n");
+    }
+
+    fprintf(file,  "  POPQ %%r11\n");
+    fprintf(file,  "  POPQ %%r10\n");
+    scratch_free(e->Register);
+}
 
 
 

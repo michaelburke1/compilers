@@ -3,6 +3,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "param_list.h"
+#include <stdio.h>
 typedef enum {
 	EXPR_ADD,
 	EXPR_SUB,
@@ -54,13 +55,18 @@ struct expr {
 	struct symbol *symbol;
 	int literal_value;
 	const char * string_literal;
-    int register;
+    int Register;
 };
 
 struct reg {
     char * name;
     int r;
     int used;
+};
+
+struct nReg {
+    int Register;
+    struct nReg * next;
 };
 
 struct expr * expr_create( expr_t kind, struct expr *left, struct expr *right );
@@ -72,7 +78,7 @@ struct expr * expr_create_character_literal(const char *c);
 struct expr * expr_create_string_literal( const char *str );
 void expr_resolve(struct expr * e);
 struct type * expr_typecheck(struct expr * e);
-void expr_codegen(struct expr *e)
+void expr_codegen(struct expr *e, FILE * file);
 void expr_print( struct expr *e );
 void checkParams(struct expr *e, struct param_list *p, const char *name);
 void initRegisters();
@@ -81,4 +87,5 @@ void scratch_free(int r);
 const char * scratch_name(int r);
 int label_create();
 const char * label_name(int label);
+void findArgument(struct expr *e, struct nReg **nR, FILE * file);
 #endif

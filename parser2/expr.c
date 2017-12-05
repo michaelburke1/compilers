@@ -10,9 +10,9 @@ int cont_aux = 0;
 int param_list = 0;
 int arguments_cont = 0;
 struct hash_table *variables = NULL;
-int reloap_cont = 0;
+int loopCount = 0;
 int strings = 0;
-int arguments2 = 0;
+int argCount = 0;
 int arguments[10] = {0,0,0,0,0,0,0,0,0,0},cont[10] = {0,0,0,0,0,0,0,0,0,0};
 int labels = 0;
 
@@ -23,12 +23,15 @@ void initRegisters() {
 
     for (i = 0; i < 7; ++i) {
         registers[i].r = 0;
+        registers[i].name = "";
         strcat(registers[i].name, "%%r");
         if (i == 0) {
             strcat(registers[i].name, "bx");
         } else {
             strcat(registers[i].name, "1");
-            strcat(registers[i].name, itoa(i));
+            char tmp[2];
+            sprintf(tmp, "%d", i);
+            strcat(registers[i].name, tmp);
         }
         registers[i].used = 0;
         printf("Register %d\n", registers[i].r);
@@ -46,6 +49,7 @@ struct expr * expr_create(expr_t kind, struct expr* left, struct expr *right) {
     e->name = 0;
     e->literal_value = 0;
     e->string_literal = 0;
+    e->Register = -1;
 
     return e;
 }
@@ -130,7 +134,7 @@ void expr_print( struct expr *e )
             printf(" %% ");
             break;
         case EXPR_NEG:
-            printf(" ! ");
+            printf(" -");
             break;
         case EXPR_GT:
             printf(" > ");
@@ -599,35 +603,343 @@ struct type * expr_typecheck(struct expr *e) {
     return type_create(TYPE_VOID, 0, 0, 0);
 }
 
-void expr_codegen(struct expr *e) {
+void expr_codegen(struct expr *e, FILE * file) {
     if (!e) {
         return;
     }
+    struct type *type;
+    struct hash_table *h;
+    struct nReg *nR;
 
     switch (e->kind) {
         case EXPR_NAME:
-            e->register = scratch_alloc();
-            printf("MOVQ %s, %s\n", 
-                symbol_codegen(e->symbol), 
-                scratch_name(e->register));
+            e->Register = scratch_alloc();
+            if (e->symbol->kind == SYMBOL_LOCAL && e->symbol->type->kind == TYPE_STRING) {
+                fprintf(file,  "  LEAQ %s,%s\n",
+                    symbol_codegen(e->symbol, file), 
+                    scratch_name(e->Register));
+            } else {
+                fprintf(file,  "MOVQ %s, %s\n", 
+                symbol_codegen(e->symbol, file), 
+                scratch_name(e->Register));
+            }
             break;
         case EXPR_ADD:
-            expr_codegen(e->left);
-            expr_codegen(e->right);
-            printf("ADDQ %s, %s\n",
-                scratch_name(e->left->register),
-                scratch_name(e->right->register));
-            e->register = e->right->register;
-            scratch_free(e->left->register);
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file,  "ADDQ %s, %s\n",
+                scratch_name(e->left->Register),
+                scratch_name(e->right->Register));
+            e->Register = e->right->Register;
+            scratch_free(e->left->Register);
             break;
-        case EXPR_ASSIGN:
-            expr_codegen(e->left);
-            printf("MOVQ %s, %s\n",
-                scratch_name(e->left->register),
-                symbol_codegen(e->right->symbol));
-            e->register = e->left->register;
+        case EXPR_SUB:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file,  "SUBQ %s, %s\n",
+                scratch_name(e->right->Register), // switched of ADD
+                scratch_name(e->left->Register));
+            e->Register = e->left->Register;
+            scratch_free(e->right->Register);
             break;
-
+        case EXPR_NEG:
+            expr_codegen(e->right, file);
+            fprintf(file,  "  MOVEQ $-1, %%rax\n");
+            fprintf(file, "  IMULQ %s\n", scratch_name(e->right->Register));      
+            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->right->Register));
+            e->Register = e->right->Register;
+            break;
+        case EXPR_MULT:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  MOVQ %s,%%rax\n", scratch_name(e->left->Register));
+            fprintf(file, "  IMULQ %s\n", scratch_name(e->right->Register));      
+            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->right->Register));
+            scratch_free(e->left->Register);
+            e->Register = e->right->Register;
+            break;
+        case EXPR_DIVIDE:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  MOVQ %s,%%rax\n", scratch_name(e->left->Register));
+            fprintf(file, "  CDQ\n");
+            fprintf(file, "  IDIVQ %s\n", scratch_name(e->right->Register));
+            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->right->Register));
+            scratch_free(e->left->Register);
+            e->Register = e->right->Register;
+            break;
+        case EXPR_EQUAL:
+            expr_codegen(e->right, file);
+            if (e->left->kind == EXPR_NAME) {
+                fprintf(file,  "MOVQ %s, %s\n",
+                    scratch_name(e->right->Register),
+                    symbol_codegen(e->left->symbol, file));
+            } else {
+                fprintf(file,  "  MOVQ %s,%s\n", 
+                    scratch_name(e->right->Register), 
+                    symbol_codegen(e->left->right->symbol, file));
+                expr_codegen(e->left, file);
+            }
+            
+            e->Register = e->right->Register;
+            break;
+        case EXPR_MOD:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  MOVQ %s,%%rax\n", scratch_name(e->left->Register));
+            fprintf(file, "  cdq\n");
+            fprintf(file, "  idivq %s\n", scratch_name(e->right->Register));
+            fprintf(file, "  MOVQ %%rdx,%s\n", scratch_name(e->right->Register));
+            scratch_free(e->left->Register);
+            e->Register = e->right->Register;
+            break;
+        case EXPR_PRE_INCREMENT:
+            expr_codegen(e->right, file);
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
+            fprintf(file, "  addq $1,%s\n", scratch_name(e->right->Register));     
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
+            break;
+        case EXPR_PRE_DECREMENT:
+            expr_codegen(e->left, file);
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
+            fprintf(file, "  subq $1,%s\n", scratch_name(e->right->Register));     
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
+            break;
+        case EXPR_POST_INCREMENT:
+            expr_codegen(e->left, file);
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
+            fprintf(file, "  addq $1,%s\n", scratch_name(e->left->Register));     
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
+            break;
+        case EXPR_POST_DECREMENT:
+            expr_codegen(e->left, file);
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
+            fprintf(file, "  subq $1,%s\n", scratch_name(e->left->Register));     
+            fprintf(file, "  MOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
+            break;
+        case EXPR_LT:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "  JL R%d\n", loopCount);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n", loopCount+1);
+            fprintf(file, "R%d:\n", loopCount);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n", loopCount+1);
+            e->Register = e->right->Register;
+            scratch_free(e->left->Register);    
+            loopCount += 2;
+            break;
+        case EXPR_GT:                       //nao se esqueca de testar todos os reloaps
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  cmp %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "  jg R%d\n",loopCount); // diferenca entre JMP e jl
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "R%d:\n",loopCount);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount+1);
+            e->Register = e->right->Register;
+            scratch_free(e->left->Register); 
+            loopCount+=2;
+            break;
+        case EXPR_LE:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "  JLE R%d\n",loopCount);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "R%d:\n",loopCount);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount+1);
+            e->Register = e->right->Register;
+            scratch_free(e->left->Register); 
+            loopCount+=2;
+            break;
+        case EXPR_GE:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "  JGE R%d\n",loopCount);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "R%d:\n",loopCount);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount+1);
+            e->Register = e->right->Register;
+            scratch_free(e->left->Register); 
+            loopCount+=2;
+            break;
+        case EXPR_EQUIV:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "  JE R%d\n",loopCount);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "R%d:\n",loopCount);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount+1);
+            scratch_free(e->left->Register);
+            e->Register = e->right->Register;
+            loopCount+=2;
+            break;
+        case EXPR_NOT_EQUAL:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP %s,%s\n", scratch_name(e->right->Register), scratch_name(e->left->Register));
+            fprintf(file, "  JE R%d\n",loopCount);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount+1);
+            fprintf(file, "R%d:\n",loopCount);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount+1);
+            scratch_free(e->left->Register);
+            e->Register = e->right->Register;
+            loopCount+=2;
+            break;
+        case EXPR_AND:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP $0,%s\n", scratch_name(e->left->Register));
+            fprintf(file, "  JE R%d\n",loopCount+1);
+            fprintf(file, "  CMP $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JE R%d\n",loopCount+1);   
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount);
+            fprintf(file, "R%d:\n",loopCount+1);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount);
+            e->Register = e->right->Register;
+            scratch_free(e->left->Register); 
+            loopCount+=2;
+            break;
+        case EXPR_OR:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP $1,%s\n", scratch_name(e->left->Register));
+            fprintf(file, "  JE R%d\n",loopCount+1);
+            fprintf(file, "  CMP $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JE R%d\n",loopCount+1);   
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JMP R%d\n",loopCount);
+            fprintf(file, "R%d:\n",loopCount+1);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "R%d:\n",loopCount);
+            loopCount+=2;
+            break;
+        case EXPR_CARAT:
+            expr_codegen(e->left, file);
+            expr_codegen(e->right, file);
+            e->Register = scratch_alloc();
+            fprintf(file, "  PUSHQ %%r10\n");
+            fprintf(file, "  PUSHQ %%r11\n");
+            fprintf(file, "  MOVQ %s,%%rdi\n", scratch_name(e->left->Register));
+            fprintf(file, "  MOVQ %s,%%rsi\n", scratch_name(e->right->Register));
+            fprintf(file, "  CALL integer_power\n");
+            fprintf(file, "  POPQ %%r11\n");
+            fprintf(file, "  POPQ %%r10\n");
+            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->Register));
+            scratch_free(e->left->Register);
+            scratch_free(e->right->Register);   
+            break;
+        case EXPR_NOT:
+            e->Register = scratch_alloc();
+            expr_codegen(e->right, file);
+            fprintf(file, "  CMP $1,%s\n", scratch_name(e->right->Register));
+            fprintf(file, "  JE R%d\n",loopCount+1);
+            fprintf(file, "  MOVQ $1,%s\n", scratch_name(e->Register));
+            fprintf(file, "  JMP R%d\n",loopCount);
+            fprintf(file, "  R%d:\n",loopCount+1);
+            fprintf(file, "  MOVQ $0,%s\n", scratch_name(e->Register));
+            fprintf(file, "R%d:\n",loopCount);
+            scratch_free(e->right->Register);
+            loopCount+=1;
+            break;
+        case EXPR_GROUP:
+            expr_codegen(e->right, file);
+            e->Register = e->right->Register;
+            break;
+                
+        case EXPR_FUNCTION:            
+            argCount = 0;
+            e->Register = scratch_alloc();
+            nR = NULL;
+            
+            findArgument(e->right, &nR, file);
+            
+            fprintf(file, "  PUSHQ %%r10\n");
+            fprintf(file, "  PUSHQ %%r11\n");
+            argCount = 0;
+            while(nR) {
+                if(argCount == 0){
+                    fprintf(file, "  MOVQ %s,%%rdi\n", scratch_name(nR->Register));
+                    scratch_free(nR->Register);
+                }
+                if(argCount == 1){
+                    fprintf(file, "  MOVQ %s,%%rsi\n", scratch_name(nR->Register));
+                    scratch_free(nR->Register);
+                }
+                if(argCount == 2){
+                    fprintf(file, "  MOVQ %s,%%rdx\n", scratch_name(nR->Register));
+                    scratch_free(nR->Register);
+                }
+                if(argCount == 3){
+                    fprintf(file, "  MOVQ %s,%%rcx\n", scratch_name(nR->Register));
+                    scratch_free(nR->Register);  
+                }
+                if(argCount == 4){
+                    fprintf(file, "  MOVQ %s,%%r8\n", scratch_name(nR->Register));
+                    scratch_free(nR->Register);  
+                }
+                if(argCount == 5){
+                    fprintf(file, "  MOVQ %s,%%r9\n", scratch_name(nR->Register)); 
+                    scratch_free(nR->Register);
+                }
+                if(argCount>5){
+                    printf("Too many arguments\n");
+                    exit(0);
+                }
+                argCount++;
+                nR = nR->next;
+            }
+            fprintf(file, "  CALL %s\n",e->left->name);
+            fprintf(file, "  POPQ %%r11\n");
+            fprintf(file, "  POPQ %%r10\n");
+            fprintf(file, "  MOVQ %%rax,%s\n", scratch_name(e->Register));
+            h = getInit();
+            argCount = 0;
+            type = hash_table_lookup(h, e->left->name);
+            if(type->subtype->kind == TYPE_VOID) {
+                scratch_free(e->Register);  
+            }
+            break;
+        case EXPR_INTEGER:
+            e->Register = scratch_alloc();
+            fprintf(file, "  MOVQ $%d,%s\n",e->literal_value, scratch_name(e->Register));
+            break;
+        case EXPR_BOOLEAN:
+            e->Register = scratch_alloc();
+            fprintf(file, "  MOVQ $%d,%s\n",e->literal_value, scratch_name(e->Register));
+            break;
+        case EXPR_CHARACTER:
+            e->Register = scratch_alloc();
+            fprintf(file, "  MOVQ $%s,%s\n",e->string_literal, scratch_name(e->Register));
+        break;
+        case EXPR_STRING:
+            e->Register = scratch_alloc();
+            fprintf(file, ".data\n.str%d:    .string %s\n.text\n LEAQ .str%d, %s\n", 
+                strings,
+                e->string_literal,
+                strings,
+                scratch_name(e->Register));
+            strings++;
+            break;
+        default:
+            break;
     }
 }
 
@@ -692,9 +1004,40 @@ int label_create() {
 const char * label_name(int label) {
     char *tmp = "";
     strcat(tmp, "'.L");
-    strcat(tmp, itoa(label));
+    char tmpNum[15];
+    sprintf(tmpNum, "%d", label);
+    strcat(tmp, tmpNum);
     strcat(tmp, "'");
     return tmp;
+}
+
+void findArgument(struct expr *e, struct nReg ** nR, FILE * file) {
+    if (!e) {
+        return;
+    }
+
+    if (e->kind == EXPR_EXPR_LIST) {
+        findArgument(e->left, nR, file);
+        findArgument(e->right, nR, file);
+        return;
+    }
+    expr_codegen(e, file);
+    
+    if (!(*nR)) {
+        (*nR) = malloc(sizeof(*nR));
+        (*nR)->Register = e->Register;
+        (*nR)->next = NULL;
+    }
+    else {
+        struct nReg *nR1 = malloc(sizeof(*nR1));
+        nR1->Register = e->Register;
+        nR1->next = NULL;
+        struct nReg *nR2 = *nR;
+        while (nR2->next!=NULL) {
+            nR2 = nR2->next;
+        }
+        nR2->next = nR1; 
+    }
 }
 
 

@@ -28,5 +28,11 @@ int getErrors(const char * s);
 void expr_constant(struct expr *e);
 struct hash_table * getInit();
 void handleArrayValues(struct expr *e,struct type *t,const char *name);
+void incrementParamCount();
+void incrementLocalCount();
+void incrementFunctionCount();
+int getParamCount();
+int getCountCount();
+int getFunctionCount();
 
 #endif
