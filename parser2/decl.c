@@ -119,7 +119,7 @@ void decl_typecheck(struct decl *d) {
         if (d->type->kind != TYPE_ARRAY) {
             struct type* t;
             t = expr_typecheck(d->value);
-            if(d->type-> kind != t->kind){
+            if(d->type->kind != t->kind){
                 printf("Cannot assign ");
                 expr_print(d->value);
                 printf(" to ");
@@ -128,11 +128,11 @@ void decl_typecheck(struct decl *d) {
                 incrementErrors("t");
             }
         } else {
-            if (d->value->kind != EXPR_ARRAY_LITERAL) {
+            if (d->value->kind != EXPR_ARRAY_LIST) {
                 printf("Cannot assign \n");
-                    expr_print(d->value);
-                    printf(" to array %s\n",d->name);
-                    incrementErrors("t");
+                expr_print(d->value);
+                printf(" to array %s\n",d->name);
+                incrementErrors("t");
             } else {
                 struct type *currType = d->type;
                 int args = 1;
@@ -149,7 +149,9 @@ void decl_typecheck(struct decl *d) {
                     }
                 } else {
                     args = 1000;
-                    while (currType->kind == TYPE_ARRAY) currType = currType->subtype;
+                    while (currType->kind == TYPE_ARRAY) {
+                        currType = currType->subtype;
+                    }
                 }
 
                 handleArrayValues(d->value, currType, d->name);
@@ -180,12 +182,18 @@ void decl_typecheck(struct decl *d) {
 void handleArrayValues(struct expr *e,struct type *t,const char *name)
 {
 
-    if(!e)return;
-    if(e->kind == EXPR_COMMA || e->kind == EXPR_ARRAY_LITERAL ){ handleArrayValues(e->left,t,name); handleArrayValues(e->right,t,name);}
-    else{
+    if(!e) {
+        return;
+    }
+
+    if (e->kind == EXPR_EXPR_LIST || e->kind == EXPR_ARRAY_LIST) { 
+        handleArrayValues(e->left, t, name); 
+        handleArrayValues(e->right, t, name);
+    }
+    else {
         const_expr++;   
         struct type *aux2 = expr_typecheck(e);
-        if(aux2->kind != t->kind){
+        if(aux2->kind != t->kind) {
             incrementErrors("t");
             printf("Passing wrong argument to array %s: incorrect expression list ", name);
             type_print(aux2);
@@ -208,94 +216,3 @@ void expr_constant(struct expr *e)
 struct hash_table * getInit() {
     return initTable;
 }
-
-/*
-
-struct type * decl_typecheck(struct decl *d) {
-    
-    if (!d) return type_create(TYPE_VOID, 0, 0, 0);
-    struct type *result = NULL;
-
-    if (d->value) {
-        struct type *expr_result = expr_typecheck(d->value);
-		if (d->type->kind == expr_result->kind) {
-			result = type_create(d->type->kind, 0, 0, 0);
-		} else {
-			printf("Type Mismatch: %s expects a ", d->name);
-			type_print(d->type);
-			printf(" but was given a ");
-			type_print(expr_result);
-			printf("\n");
-		    incrementErrors("t");
-        }
-    } else if (d->code) {
-        struct type *function_return = stmt_typecheck(d->code);
-		if (function_return) {
-			if (type_equals(d->type->subtype, function_return)) {
-				result = type_create(d->type->subtype->kind, 0, 0, 0);
-			} else {
-				printf("Type Error: Function %s expects a ", d->name);
-				type_print(d->type->subtype);
-				printf(" but a ");
-				type_print(function_return);
-				printf(" was returned\n");	
-                incrementErrors("t"); 
-            }
-		} else {
-			if (d->type->subtype->kind == TYPE_VOID) {
-				result = type_create(TYPE_VOID, 0, 0, 0);
-			} else {
-				printf("Type Error: Function %s expects a ", d->name);
-				type_print(d->type->subtype);
-				printf(" but no return value was found\n");
-			    incrementErrors("t"); 
-            }
-		}
-    } else if (d->emptyFunc) {
-        if(d->type->subtype->kind == TYPE_VOID) {
-			result = type_create(TYPE_VOID, 0, 0, 0);
-		} else {
-			printf("Type Error: Non void function %s cannot be empty\n", d->name);
-		    incrementErrors("t");
-        }
-    } else {
-        if (d->type->kind == TYPE_ARRAY) {
-			if (d->type->expr) {
-				if(d->type->expr->kind != EXPR_INTEGER) {
-					printf("Type Error: Declaration of array %s must have a fixed size\n", d->name);
-				    incrementErrors("t");
-                }
-			} else {
-				printf("Declaration of array %s must have a fixed size\n", d->name);
-		        incrementErrors("t");	
-            }
-		}
-		result = type_create(d->type->kind, 0, 0, 0);    
-    }
-
-    decl_typecheck(d->next);
-    return result;
-}*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

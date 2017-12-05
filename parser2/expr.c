@@ -176,7 +176,7 @@ void expr_print( struct expr *e )
             printf("!");
             break;
         case EXPR_ARRAY_LIST:
-            isArrayList=1;
+            isArrayList = 1;
             break;
         case EXPR_GROUP:
             printf("(");
@@ -198,14 +198,16 @@ void expr_print( struct expr *e )
     }
     
     else{
-        if(e->kind == EXPR_ARRAY_IDENT){
+        if(e->kind == EXPR_ARRAY_IDENT) {
             printf("[");
-        expr_print(e->right); 
+            expr_print(e->right); 
         }
-        else if(EXPR_ARRAY_ELEMENT){
-        expr_print(e->right);
+        else if(EXPR_ARRAY_ELEMENT) {
+            expr_print(e->right);
+        } 
+        else {
+            expr_print(e->right);              
         }
-        else expr_print(e->right);              
     }   
 }
 
@@ -557,7 +559,7 @@ struct type * expr_typecheck(struct expr *e) {
             type = s->type;
             if(type->kind == TYPE_STRING){
                 struct type *t = expr_typecheck(e->right->left);
-                if(t->kind !=TYPE_INTEGER)
+                if(t->kind != TYPE_INTEGER)
                 {
                     printf("Index for the string %s needs to be and integer\n", e->left->name);
                     incrementErrors("t");
