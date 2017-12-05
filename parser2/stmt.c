@@ -219,30 +219,18 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             printf("we ifing\n");
             else_label = label_create();
             done_label = label_create();
-            printf("labelcreated\n");
             expr_codegen(s->expr, file);
-            printf("done expr in if\n");
-            fprintf(file,  "CMP $0, %s\n", scratch_name(s->expr->Register));
+            fprintf(file,  "\tCMP $0, %s\n", scratch_name(s->expr->Register));
             scratch_free(s->expr->Register);
-            printf("label naming\n");
             char label1[50];
             label1[0] = '.'; 
             label1[1] = 'L'; 
             label1[2] = '\0';
             char num[100];
             sprintf(num, "%d", else_label);
-            strcat(label1, num);/*
-            if (else_label > 9) {
-                label1[2] = '0' + else_label / 10;
-                label1[3] = '0' + else_label % 10;
-                label1[4] = '\0';
-            } else {
-                label1[2] = '0' + else_label;
-                label1[3] = '\0';
-            }*/
+            strcat(label1, num);
             
-            fprintf(file,  "JE %s\n", label1);
-            printf("$1st labe named\n");
+            fprintf(file,  "\tJE %s\n", label1);
             stmt_codegen(s->body, file); 
             
             char label2[50];
@@ -251,16 +239,7 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             label2[2] = '0';
             char num2[100];
             sprintf(num2, "%d", done_label);
-            strcat(label2, num2);/*
-            if (done_label > 9) {
-                label2[2] = '0' + done_label / 10;
-                label2[3] = '0' + done_label % 10;
-                label2[4] = '\0';
-            } else {
-                label2[2] = '0' + done_label;
-                label2[3] = '\0';
-            }*/
-
+            strcat(label2, num2);
             fprintf(file,  "JMP %s\n",label2);
             fprintf(file,  "%s:\n",label1);
             stmt_codegen(s->else_body, file);
@@ -276,7 +255,7 @@ void stmt_codegen(struct stmt *s, FILE * file) {
                 expr_codegen(s->init_expr, file);
                 scratch_free(s->init_expr->Register);
             }
-            fprintf(file,  "FOR: \n");
+            fprintf(file,  "\tFOR: \n");
 
             if (s->expr) {
                 expr_codegen(s->expr, file);
