@@ -186,10 +186,11 @@ void stmt_typecheck(struct stmt *s, struct type *subtype) {
 }
 
 void stmt_codegen(struct stmt *s, FILE * file) {
-
     if (!s) {
         return; 
     }
+    
+    printf("stmt codecg we here\n");
 
     int else_label, done_label;
 
@@ -202,10 +203,18 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             decl_codegen(s->decl, file);
             break;
         case STMT_RETURN:
-            expr_codegen(s->expr, file);
-            fprintf(file,  "MOV %s, %%rax\n", scratch_name(s->expr->Register));
-            fprintf(file,  "JMP .%s_epilogue\n", "uhhhh");
-            scratch_free(s->expr->Register);
+            if (s->expr) {
+                printf("in return, going into expr\n");
+                expr_codegen(s->expr, file);
+                printf("expr done\n");
+                printf("doing move and scratch_name\nreg: %d\n", s->expr->Register);
+                fprintf(file,  "MOV %s, %%rax\n", scratch_name(s->expr->Register));
+                fprintf(file,  "JMP .idk what to do\n"); // needs to be fixed
+                printf("return freeing\n");
+                scratch_free(s->expr->Register);
+                printf("return freed\n");
+            }
+            fprintf(file,  "JMP FUNCTION%d\n", getFunctionCount());
             break;
         case STMT_IF_ELSE:
             else_label = label_create();
@@ -237,9 +246,12 @@ void stmt_codegen(struct stmt *s, FILE * file) {
                 scratch_free(s->expr->Register);
                 fprintf(file, "  cmp $0,%s\n", scratch_name(s->expr->Register));
                 fprintf(file, "   JE FOR\n");
+                printf("scratching freeing\n");
                 scratch_free(s->expr->Register);
             }
+            printf("stmt cging\n");
             stmt_codegen(s->body, file);
+            printf("expr cging\n");
             expr_codegen(s->next_expr, file);
             fprintf(file, "  JMP FOR\nFOR:");
             break;

@@ -1,7 +1,22 @@
-// tests print statements 
-x:integer=10;
-main:function integer () =
-{
-	print x;	
-	
-}
+.text
+.global main
+main:
+  PUSHQ %rbp
+   MOVQ  %rsp, %rbp
+  PUSHQ %rbx
+  PUSHQ %r12
+  PUSHQ %r13
+  PUSHQ %r14
+  PUSHQ %r15
+
+JMP FUNCTION0
+FUNCTION0:
+
+  POPQ %r15
+  POPQ %r14
+  POPQ %r13
+  POPQ %r12
+  POPQ %rbx
+  MOVQ %rbp,%rsp
+  POPQ %rbp
+  ret

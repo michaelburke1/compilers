@@ -1,4 +1,4 @@
-parse: decl.o expr.o stmt.o type.o param_list.o symbol.o scope.o hash_table.o main.o scanner.o parser.o
+parse: decl.o expr.o stmt.o type.o param_list.o symbol.o scope.o hash_table.o main.o scanner.o parser.o library.o
 	/usr/bin/gcc decl.o param_list.o expr.o stmt.o type.o symbol.o scope.o hash_table.o main.o scanner.o parser.o -o cminor -lm
 
 %.o: %.c *.h

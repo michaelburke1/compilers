@@ -96,6 +96,7 @@ int typecheck(char *file) {
         decl_resolve(parser_result);
         printf("%d resolve errors found\n",getErrors("r"));
         //printf("typecheckinggg");
+        initRegisters();
         decl_typecheck(parser_result);
         if (getErrors("t") > 0) {
             exit(1);
@@ -129,6 +130,7 @@ int codegen(char *file1, char *file2) {
         }
         FILE * file;
         file = fopen(file2, "w+");
+        puts("opened file\n");
         decl_codegen(parser_result, file);
         return 0;
     }
@@ -157,7 +159,7 @@ int main(int argc, char ** argv) {
         mode = 3;
     } else if (strcmp(argv[1], "-typecheck") == 0 ) {
         mode = 4;
-    } else if (strcmp(argv[1], "-codegen") == ) {
+    } else if (strcmp(argv[1], "-codegen") == 0) {
         mode = 5;
     }
 
