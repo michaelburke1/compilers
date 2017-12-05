@@ -225,7 +225,7 @@ void decl_codegen(struct decl *d, FILE * file) {
                     printf("wrote to file!\n");
                     struct param_list *p = d->type->params;
                     printf("params set\n");
-                    fprintf(file,  "\tPUSHQ %%rbp\n   MOVQ  %%rsp, %%rbp\n");
+                    fprintf(file,  "\tPUSHQ %%rbp\n\tMOVQ  %%rsp, %%rbp\n");
                     int pCount = 0;
 
                     while (p) {

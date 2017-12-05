@@ -5,6 +5,9 @@
 #include "param_list.h"
 #include <stdlib.h>
 #include <string.h>
+
+int forIndex = 0;
+
 struct stmt * stmt_create( stmt_kind_t kind, struct decl *d, struct expr *init_expr, struct expr *e, struct expr *next_expr, struct stmt *body, struct stmt *else_body ) {
 
     struct stmt *s = malloc(sizeof(*s));
@@ -249,27 +252,27 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             stmt_codegen(s->body, file);
             break;
         case STMT_FOR:
-        expr_resolve(s->init_expr); expr_resolve(s->expr); expr_resolve(s->next_expr);
-            stmt_resolve(s->body);
+            s->forIndex = forIndex + 1;
             if (s->init_expr) {
                 expr_codegen(s->init_expr, file);
                 scratch_free(s->init_expr->Register);
             }
-            fprintf(file,  "\tFOR: \n");
-
+            fprintf(file, "FOR%d:\n", forIndex);
+            
             if (s->expr) {
                 expr_codegen(s->expr, file);
                 scratch_free(s->expr->Register);
                 fprintf(file, "\tcmp $0,%s\n", scratch_name(s->expr->Register));
-                fprintf(file, "\tJE FOR\n");
-                printf("scratching freeing\n");
+                fprintf(file, "\tJE FOR%d\n", s->forIndex);
                 scratch_free(s->expr->Register);
             }
-            printf("stmt cging\n");
             stmt_codegen(s->body, file);
-            printf("expr cging\n");
-            expr_codegen(s->next_expr, file);
-            fprintf(file, "\tJMP FOR\nFOR:");
+            
+            if (s->next_expr) {
+                expr_codegen(s->next_expr, file);
+            }
+            fprintf(file, "\tJMP FOR%d\nFOR%d:", s->forIndex - 1, s->forIndex);
+            forIndex += 2;
             break;
         case STMT_PRINT:
             printStmt(s->expr, file);
