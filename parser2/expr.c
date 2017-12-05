@@ -14,6 +14,28 @@ int reloap_cont = 0;
 int strings = 0;
 int arguments2 = 0;
 int arguments[10] = {0,0,0,0,0,0,0,0,0,0},cont[10] = {0,0,0,0,0,0,0,0,0,0};
+int labels = 0;
+
+struct reg registers[7];
+
+void initRegisters() {
+    int i;
+
+    for (i = 0; i < 7; ++i) {
+        registers[i].r = 0;
+        strcat(registers[i].name, "%%r");
+        if (i == 0) {
+            strcat(registers[i].name, "bx");
+        } else {
+            strcat(registers[i].name, "1");
+            strcat(registers[i].name, itoa(i));
+        }
+        registers[i].used = 0;
+        printf("Register %d\n", registers[i].r);
+        printf("Name: %s\n", registers[i].name);
+        printf("In Use: %d\n", registers[i].used);
+    }
+}
 
 struct expr * expr_create(expr_t kind, struct expr* left, struct expr *right) {
 
@@ -577,6 +599,38 @@ struct type * expr_typecheck(struct expr *e) {
     return type_create(TYPE_VOID, 0, 0, 0);
 }
 
+void expr_codegen(struct expr *e) {
+    if (!e) {
+        return;
+    }
+
+    switch (e->kind) {
+        case EXPR_NAME:
+            e->register = scratch_alloc();
+            printf("MOVQ %s, %s\n", 
+                symbol_codegen(e->symbol), 
+                scratch_name(e->register));
+            break;
+        case EXPR_ADD:
+            expr_codegen(e->left);
+            expr_codegen(e->right);
+            printf("ADDQ %s, %s\n",
+                scratch_name(e->left->register),
+                scratch_name(e->right->register));
+            e->register = e->right->register;
+            scratch_free(e->left->register);
+            break;
+        case EXPR_ASSIGN:
+            expr_codegen(e->left);
+            printf("MOVQ %s, %s\n",
+                scratch_name(e->left->register),
+                symbol_codegen(e->right->symbol));
+            e->register = e->left->register;
+            break;
+
+    }
+}
+
 void checkParams(struct expr *e, struct param_list *p, const char *name) {
     if (!e || !p) {
         return;
@@ -609,6 +663,38 @@ void checkParams(struct expr *e, struct param_list *p, const char *name) {
             printf("\n");
         }
     }
+}
+
+int scratch_alloc() {
+    int i;
+    for (i = 0; i < 7; ++i) {
+        if (!registers[i].used) {
+            registers[i].used = 1;
+            return registers[i].r;
+        }
+    }
+
+    return -1;
+}
+
+void scratch_free(int r) {
+    registers[r].used = 0;
+}
+
+const char * scratch_name(int r) {
+    return registers[r].name;
+}
+
+int label_create() {
+    return labels++;
+}
+
+const char * label_name(int label) {
+    char *tmp = "";
+    strcat(tmp, "'.L");
+    strcat(tmp, itoa(label));
+    strcat(tmp, "'");
+    return tmp;
 }
 
 

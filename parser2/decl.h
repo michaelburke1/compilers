@@ -22,6 +22,7 @@ struct decl * decl_create( char *name, struct type *t, struct expr *v, struct st
 void decl_print( struct decl *d, int indent );
 void decl_resolve(struct decl * d);
 void decl_typecheck(struct decl *d);
+void decl_codegen(struct decl *d, FILE * file);
 int incrementErrors(const char * s);
 int getErrors(const char * s);
 void expr_constant(struct expr *e);

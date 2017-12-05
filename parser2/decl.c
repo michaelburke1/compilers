@@ -179,6 +179,17 @@ void decl_typecheck(struct decl *d) {
     decl_typecheck(d->next);
 }
 
+void decl_codegen(struct decl *d, FILE * file) {
+
+    if (!d) {
+        return;
+    }
+
+    printf("doing stuff\n");
+
+    decl_codegen(d->next, file);
+}
+
 void handleArrayValues(struct expr *e,struct type *t,const char *name)
 {
 

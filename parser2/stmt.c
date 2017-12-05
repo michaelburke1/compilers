@@ -184,60 +184,17 @@ void stmt_typecheck(struct stmt *s, struct type *subtype) {
     }
     stmt_typecheck(s->next, subtype);
 }
-/*
-struct type *stmt_typecheck(struct stmt *s) {
-	if(!s) return 0;
-	struct type *result = stmt_typecheck(s->next);
 
-	decl_typecheck(s->decl);
-	expr_typecheck(s->init_expr);
-	expr_typecheck(s->expr);
-	expr_typecheck(s->next_expr);
+void stmt_codegen(struct stmt *s) {
 
-	struct type *body = stmt_typecheck(s->body);
-	if(body) {
-		if(!result || body->kind == result->kind) {
-			result = body;
-		} else {
-			printf("You must return the same type consistently within a function\n");
-		    incrementErrors("t");  
-        }
-	}
-	struct type *else_part = stmt_typecheck(s->else_body);
-	if(else_part) {
-		if(!result || else_part->kind == result->kind) {
-			result = else_part;
-		} else {
-			printf("You must return the same type consistently within a function\n");
-		    incrementErrors("t");
-        }
-	}
-	if(else_part && body && else_part->kind != body->kind) {
-		printf("You must return the same type consistently within a function\n");
-	    incrementErrors("t");  
+    if (!s) {
+        return; 
     }
-	if(s->kind == STMT_RETURN) {
-		struct type *new_result = expr_typecheck(s->expr);
-        type_print(new_result);
-        type_print(result);
 
-        if(!result || new_result->kind == result->kind) {
-			result = new_result;
-			while(result->subtype) result = result->subtype;
-		} else {
-			printf("You must return the same type consistently within a function\n");
-		    incrementErrors("t");  
-        }
-	}
-	if(s->kind == STMT_PRINT) {
-		expr_typecheck(s->expr->left);
-	}
-	return result;
+    stmt_codegen(s->next);
 }
 
 
-
-*/
 
 
 
