@@ -32,7 +32,9 @@ void incrementParamCount();
 void incrementLocalCount();
 void incrementFunctionCount();
 int getParamCount();
-int getCountCount();
+int getLocalCount();
 int getFunctionCount();
-
+void resetParamCount();
+void resetLocalCount();
+void resetFunctionCount();
 #endif

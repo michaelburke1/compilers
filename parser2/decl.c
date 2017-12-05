@@ -89,9 +89,15 @@ void decl_resolve( struct decl *d )
         incrementErrors("r");
     }
     
-    symbol_t kind = scope_level() > 1 ?
-        SYMBOL_LOCAL : SYMBOL_GLOBAL;
+    symbol_t kind;
     
+    if (scope_level() > 1) {
+        kind = SYMBOL_LOCAL;
+        incrementParamCount; incrementLocalCount;
+    } else {
+        kind = SYMBOL_GLOBAL;
+    }
+
     struct symbol * newS = symbol_create(kind, d->type, d->name, 0, 0);
     d->symbol = newS;
     scope_bind(d->name, newS);
@@ -107,6 +113,8 @@ void decl_resolve( struct decl *d )
     if(d->code) {
         scope_enter();
         stmt_resolve(d->code);
+        d->symbol->localCount = getLocalCount();
+
         scope_exit();
     }
     decl_resolve(d->next);
@@ -333,10 +341,22 @@ void incrementFunctionCount() {
 int getParamCount() {
     return paramCount;
 }
-int getCountCount() {
+int getLocalCount() {
     return localCount;
 }
 
 int getFunctionCount() {
     return functionCount;
+}
+
+void resetParamCount() {
+    paramCount = 0;
+}
+
+void resetLocalCount() {
+    localCount = 0;
+}
+
+void resetFunctionCount() {
+    functionCount = 0;
 }

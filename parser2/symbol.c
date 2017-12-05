@@ -1,4 +1,5 @@
 #include "symbol.h"
+#include "decl.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +10,7 @@ struct symbol * symbol_create( symbol_t kind, struct type *type, char *name, int
     s->subtype = subtype;
     s->type = type;
     s->name = name;
+    s->paramCount = getParamCount();
 
     return s;
 }

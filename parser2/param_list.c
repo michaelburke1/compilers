@@ -31,6 +31,7 @@ void param_list_resolve(struct param_list *pl) {
     
     if (!pl) return;
     
+    incrementParamCount();
     struct symbol *s = symbol_create(SYMBOL_PARAM, pl->type, pl->name, 0, 0);
     scope_bind(pl->name, s);
     param_list_resolve(pl->next);
