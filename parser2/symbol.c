@@ -36,7 +36,8 @@ const char * symbol_codegen(struct symbol *s, FILE * file) {
 	int vars[30];
 
 	if (s->kind == SYMBOL_GLOBAL) {
-		return s->name;
+	    printf("printing name!\nYeet:%s&\n", s->name);
+        return s->name;
 	}
 
 	int bytes = s->paramCount * 8;
@@ -67,5 +68,6 @@ const char * symbol_codegen(struct symbol *s, FILE * file) {
 		strcpy(rValue, instruction);
 		return rValue;
 	}
-	return "";
+    printf("printing nothing\n");
+    return "";
 }
