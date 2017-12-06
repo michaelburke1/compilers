@@ -199,22 +199,23 @@ void decl_codegen(struct decl *d, FILE * file) {
     printf("d aint null\n");
     if (d->symbol->kind == SYMBOL_GLOBAL) {
         printf("symbol kind is global\n");
+        fprintf(file, ".data\n");
         if (d->type->kind != TYPE_FUNCTION && !d->value && !d->code) {
-            printf("!value ! code !function\n");
             if (d->type->kind != TYPE_STRING) {
-                fprintf(file,  ".data\n%s: .quad 0\n", d->name);
+                fprintf(file,  "%s: .quad 0\n", d->name);
             } else {
-                fprintf(file,  ".data\n.global %s\n%s:\n  .string \"\" \n", d->name, d->name);
+                fprintf(file,  ".global %s\n%s:\n  .string \"\" \n", d->name, d->name);
             }
+        } else if (d->type->kind == TYPE_ARRAY && d->value) {
+            fprintf(file, ".global %s\n%s\n\t .quad ", d->name, d->name);
+            expr_codegen(d->value, file);
+            printf("\n");
         } else {
-            printf("!v,c,f else\n");
             if (d->type->kind != TYPE_FUNCTION && d->value) {
                 printf("!function but value\n");
                 if (d->type->kind == TYPE_STRING) {
-                    printf("d->t->k string!\n");
                     fprintf(file,  ".data\n.global %s\n%s:\n  .string ""%s""\n", d->name, d->name, d->value->string_literal);
                 } else {
-                    printf("d->t->k no string!\n");
                     fprintf(file,  ".data\n.global %s\n%s:\n  .quad %d\n", d->name, d->name, d->value->literal_value);
                 }
             } else if (d->type->kind == TYPE_FUNCTION) {
