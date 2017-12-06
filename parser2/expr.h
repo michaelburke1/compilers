@@ -69,6 +69,8 @@ struct nReg {
     struct nReg * next;
 };
 
+struct param_list;
+
 struct expr * expr_create( expr_t kind, struct expr *left, struct expr *right );
 
 struct expr * expr_create_name( const char *n );

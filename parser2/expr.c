@@ -16,29 +16,7 @@ int argCount = 0;
 int arguments[10] = {0,0,0,0,0,0,0,0,0,0},cont[10] = {0,0,0,0,0,0,0,0,0,0};
 int labels = 0;
 
-int registers[16] = {1,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0};;
-
-/*void initRegisters() {
-    int i;
-
-    for (i = 0; i < 7; ++i) {
-        registers[i].r = 0;
-        registers[i].name = "";
-        strcat(registers[i].name, "%%r");
-        if (i == 0) {
-            strcat(registers[i].name, "bx");
-        } else {
-            strcat(registers[i].name, "1");
-            char tmp[2];
-            sprintf(tmp, "%d", i);
-            strcat(registers[i].name, tmp);
-        }
-        registers[i].used = 0;
-        printf("Register %d\n", registers[i].r);
-        printf("Name: %s\n", registers[i].name);
-        printf("In Use: %d\n", registers[i].used);
-    }
-}*/
+int registers[16] = {1,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0};
 
 struct expr * expr_create(expr_t kind, struct expr* left, struct expr *right) {
 
