@@ -938,6 +938,16 @@ void expr_codegen(struct expr *e, FILE * file) {
                 scratch_name(e->Register));
             strings++;
             break;
+        case EXPR_ARRAY_LIST:
+            expr_codegen(e->right, file);
+            break;
+        case EXPR_EXPR_LIST:
+            expr_codegen(e->left, file);
+            fprintf(file, ", ");
+            expr_codegen(e->right, file);
+            break;
+        case EXPR_INTEGER:
+            fprintf(file, "%d", e->literal_value);
         default:
             break;
     }
