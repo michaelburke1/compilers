@@ -88,6 +88,5 @@ int scratch_alloc();
 void scratch_free(int r);
 const char * scratch_name(int r);
 int label_create();
-const char * label_name(int label);
 void findArgument(struct expr *e, struct nReg **nR, FILE * file);
 #endif

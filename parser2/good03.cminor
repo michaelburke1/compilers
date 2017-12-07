@@ -1,18 +1,10 @@
-x:integer = 5;
-y:integer = 10;
+str1: string = "hi";
 main:function void ()=
 {
-	x:integer = 5;
-	y:integer = 10;
-	{
-		
-		x:integer = 5;
-		y:integer = 10;
-		{
-			
-			x:char = 'a';
-			y:integer = 10;
-		}
-		y = x + y;
+
+	if (str1 == "hi") {
+		print "yes";
+	} else {
+		print "wut";
 	}
 }

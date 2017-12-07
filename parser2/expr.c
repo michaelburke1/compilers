@@ -15,6 +15,7 @@ int strings = 0;
 int argCount = 0;
 int arguments[10] = {0,0,0,0,0,0,0,0,0,0},cont[10] = {0,0,0,0,0,0,0,0,0,0};
 int labels = 0;
+int count =0;
 
 int registers[16] = {1,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0};
 
@@ -592,14 +593,10 @@ void expr_codegen(struct expr *e, FILE * file) {
     switch (e->kind) {
         case EXPR_NAME:
             e->Register = scratch_alloc();
-            if (e->symbol->kind == SYMBOL_LOCAL && e->symbol->type->kind == TYPE_STRING) {
-                fprintf(file,  "\tLEAQ %s,%s\n",
-                    symbol_codegen(e->symbol, file), 
-                    scratch_name(e->Register));
+            if (e->symbol->kind == SYMBOL_LOCAL && e->symbol->type->kind == TYPE_ARRAY) {
+                fprintf(file,  "\tLEAQ %s,%s\n", symbol_codegen(e->symbol, file), scratch_name(e->Register));
             } else {
-                fprintf(file,  "\tMOVQ %s, %s\n", 
-                symbol_codegen(e->symbol, file), 
-                scratch_name(e->Register));
+                fprintf(file,  "\tMOVQ %s, %s\n", symbol_codegen(e->symbol, file), scratch_name(e->Register));
             }
             break;
         case EXPR_ADD:
@@ -649,9 +646,15 @@ void expr_codegen(struct expr *e, FILE * file) {
         case EXPR_EQUAL:
             expr_codegen(e->right, file);
             if (e->left->kind == EXPR_NAME) {
-                fprintf(file,  "MOVQ %s, %s\n",
-                    scratch_name(e->right->Register),
-                    symbol_codegen(e->left->symbol, file));
+                if (e->right->kind == EXPR_ARRAY_IDENT) {
+                    fprintf(file,  "\tMOVQ %s, %s\n",
+                        scratch_name(e->right->left->Register),
+                        symbol_codegen(e->left->symbol, file));
+                } else {
+                    fprintf(file,  "\tMOVQ %s, %s\n",
+                        scratch_name(e->right->Register),
+                        symbol_codegen(e->left->symbol, file));
+                }
             } else {
                 fprintf(file,  "\tMOVQ %s,%s\n", 
                     scratch_name(e->right->Register), 
@@ -673,25 +676,25 @@ void expr_codegen(struct expr *e, FILE * file) {
             break;
         case EXPR_PRE_INCREMENT:
             expr_codegen(e->right, file);
-            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->right->Register));
             fprintf(file, "\taddq $1,%s\n", scratch_name(e->right->Register));     
             fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
             break;
         case EXPR_PRE_DECREMENT:
             expr_codegen(e->left, file);
-            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->Register));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register), scratch_name(e->right->Register));
             fprintf(file, "\tsubq $1,%s\n", scratch_name(e->right->Register));     
             fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->right->Register),symbol_codegen(e->right->symbol, file));
             break;
         case EXPR_POST_INCREMENT:
             expr_codegen(e->left, file);
-            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->left->Register));
             fprintf(file, "\taddq $1,%s\n", scratch_name(e->left->Register));     
             fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
             break;
         case EXPR_POST_DECREMENT:
             expr_codegen(e->left, file);
-            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->Register));
+            fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register), scratch_name(e->left->Register));
             fprintf(file, "\tsubq $1,%s\n", scratch_name(e->left->Register));     
             fprintf(file, "\tMOVQ %s,%s\n", scratch_name(e->left->Register),symbol_codegen(e->left->symbol, file));
             break;
@@ -918,14 +921,36 @@ void expr_codegen(struct expr *e, FILE * file) {
             break;
         case EXPR_ARRAY_LIST:
             expr_codegen(e->right, file);
+            if (e->right->kind == EXPR_INTEGER) {
+                fprintf(file, "%d", e->literal_value);
+            } else {
+                expr_codegen(e->right, file);
+            } 
             break;
         case EXPR_EXPR_LIST:
-            expr_codegen(e->left, file);
+            printf("hit%d\n", count);
+            //expr_codegen(e->left, file);
+            if (e->left->kind == EXPR_INTEGER) { 
+                fprintf(file, "%d", e->left->literal_value);
+                count++;
+            }
             fprintf(file, ", ");
-            expr_codegen(e->right, file);
+            if (e->right->kind == EXPR_INTEGER) {
+                fprintf(file, "%d", e->right->literal_value);
+                count++;
+                return;
+            } else {
+                expr_codegen(e->right, file);
+            } 
             break;
-        case EXPR_INTEGER:
-            fprintf(file, "%d", e->literal_value);
+        case EXPR_ARRAY_IDENT:
+            e->Register = scratch_alloc();
+            fprintf(file, "\tLEAQ %s, %s\n", e->left->name, scratch_name(e->Register));
+            e->right->left->Register = scratch_alloc();
+            fprintf(file, "\tMOVQ $%d, %s\n", e->right->left->literal_value, scratch_name(e->right->left->Register));
+            fprintf(file, "\tMOVQ 4(%s, %s, 4), %s\n", scratch_name(e->Register), scratch_name(e->right->left->Register), scratch_name(e->Register));
+            scratch_free(e->right->left->Register);
+            break;
         default:
             break;
     }
@@ -1014,27 +1039,6 @@ int label_create() {
     return labels++;
 }
 
-const char * label_name(int label) {
-    /*char *tmp = ".L";
-    char *tmpNum;
-    char ugh[100];
-
-    sprintf(tmpNum, "%d", label);
-    printf("sprintf worked\n");
-    printf("rnum:\n%d\n", label);
-    printf("num:\n%s\n", tmpNum);
-    printf("1st cat\n");
-    strcpy(ugh, tmp);
-    printf("2nd cat\n");
-    strcat(ugh, tmpNum);
-    strcat(ugh, "'");
-    printf("YEEEEETEEEEEETT:\n\n\n%s\n", ugh);
-    char *tmp1 = ugh;
-    printf("nonon:\n%s\n", tmp1);
-    return tmp1;*/
-    return "";
-}
-
 void findArgument(struct expr *e, struct nReg ** nR, FILE * file) {
     if (!e) {
         return;
@@ -1063,19 +1067,4 @@ void findArgument(struct expr *e, struct nReg ** nR, FILE * file) {
         nR2->next = nR1; 
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

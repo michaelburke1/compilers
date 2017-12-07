@@ -191,41 +191,57 @@ void decl_typecheck(struct decl *d) {
 }
 
 void decl_codegen(struct decl *d, FILE * file) {
-    printf("we code checking!\n");
     if (!d) {
         return;
     }
 
-    printf("d aint null\n");
     if (d->symbol->kind == SYMBOL_GLOBAL) {
-        printf("symbol kind is global\n");
         fprintf(file, ".data\n");
         if (d->type->kind != TYPE_FUNCTION && !d->value && !d->code) {
             if (d->type->kind != TYPE_STRING) {
                 fprintf(file,  "%s: .quad 0\n", d->name);
             } else {
-                fprintf(file,  ".global %s\n%s:\n  .string \"\" \n", d->name, d->name);
+                fprintf(file,  ".global orig%s\norig%s:\n  .string \"\" \n", d->name, d->name);
+                fprintf(file, ".global %s\n%s:\n .quad orig%s\n", d->name, d->name, d->name);
             }
         } else if (d->type->kind == TYPE_ARRAY && d->value) {
-            fprintf(file, ".global %s\n%s\n\t .quad ", d->name, d->name);
-            expr_codegen(d->value, file);
-            printf("\n");
+            fprintf(file, ".global %s\n%s:\n\t .quad ", d->name, d->name);
+            int i, j;
+            if (d->type->expr->literal_value) {
+                i = d->type->expr->literal_value;
+            }
+            struct expr *e = d->value->right;
+            for (j = 0; j < i; ++j) {
+                if (!e->left) {
+                    if (e) {
+                        fprintf(file, "%d", e->literal_value);
+                    }
+                    break;
+                }
+                fprintf(file, "%d", e->left->literal_value);
+                if (e->right) {
+                    fprintf(file, ", ");
+                    e = e->right;
+                } else {
+                    break;
+                }
+            }
+
+            //expr_codegen(d->value, file);
+            fprintf(file, "\n");
         } else {
             if (d->type->kind != TYPE_FUNCTION && d->value) {
-                printf("!function but value\n");
                 if (d->type->kind == TYPE_STRING) {
-                    fprintf(file,  ".data\n.global %s\n%s:\n  .string ""%s""\n", d->name, d->name, d->value->string_literal);
+                    fprintf(file,  ".data\n.global orig%s\norig%s:\n  .string ""%s""\n", d->name, d->name, d->value->string_literal);
+                    fprintf(file, ".global %s\n%s:\n .quad orig%s\n", d->name, d->name, d->name);
+                    
                 } else {
                     fprintf(file,  ".data\n.global %s\n%s:\n  .quad %d\n", d->name, d->name, d->value->literal_value);
                 }
             } else if (d->type->kind == TYPE_FUNCTION) {
-                printf("function\n");
                 if (d->code) {
-                    printf("function code!\n");
                     fprintf(file,  ".text\n.global %s\n%s:\n", d->name, d->name);
-                    printf("wrote to file!\n");
                     struct param_list *p = d->type->params;
-                    printf("params set\n");
                     fprintf(file,  "\tPUSHQ %%rbp\n\tMOVQ  %%rsp, %%rbp\n");
                     int pCount = 0;
 
@@ -233,7 +249,6 @@ void decl_codegen(struct decl *d, FILE * file) {
                         p = p->next;
                         pCount++;
                     }
-                    printf("checking pcount\n");
                     if (pCount >= 1) {
                         fprintf(file,  "\tPUSHQ %%rdi\n");
                     }
@@ -253,18 +268,14 @@ void decl_codegen(struct decl *d, FILE * file) {
                         fprintf(file,  "\tPUSHQ %%r9\n");
                     }
                     if(d->symbol->localCount > 0){        
-                        printf("setting localCount\n");
                         fprintf(file,  "\tsubq $%d,%%rsp\n", d->symbol->localCount*8);
                     }
-                    printf("local count set\n");
                     fprintf(file,  "\tPUSHQ %%rbx\n");
                     fprintf(file,  "\tPUSHQ %%r12\n");
                     fprintf(file,  "\tPUSHQ %%r13\n");
                     fprintf(file,  "\tPUSHQ %%r14\n");
                     fprintf(file,  "\tPUSHQ %%r15\n\n");      
-                    printf("going into stmt cg\n");
                     stmt_codegen(d->code, file);
-                    printf("out of stmtcg\n");
                     fprintf(file,  "FUNCTION%d:\n", getFunctionCount());
                     fprintf(file,  "\n");
                     fprintf(file,  "\tPOPQ %%r15\n");
@@ -276,12 +287,10 @@ void decl_codegen(struct decl *d, FILE * file) {
                     fprintf(file,  "\tPOPQ %%rbp\n");
                     fprintf(file,  "\tret\n");
                     incrementFunctionCount();
-                    printf("finctuon if ending!\n");
                 }
             }
         }
     } else if (d->symbol->kind == SYMBOL_LOCAL && d->value) {
-        printf("symbol kind is local and d->value\n");
         expr_codegen(d->value, file);
         fprintf(file,  "\tMOVQ %s,-%d(%%rbp)\n",
             scratch_name(d->value->Register),

@@ -136,20 +136,6 @@ decl        : ident TOKEN_COLON type TOKEN_EQUAL expr TOKEN_SEMI
                 { $$ = decl_create($1, $3, 0, $6, 0, 0); }  
             ;
 
-/*
-decl        : ident TOKEN_COLON type TOKEN_SEMI
-	            { $$ = decl_create($1, $3, 0, 0, 0, 0); }
-            | ident TOKEN_COLON type TOKEN_EQUAL expr TOKEN_SEMI
-    	        { $$ = decl_create($1, $3, $5, 0, 0, 0); }
-            | ident TOKEN_COLON type TOKEN_EQUAL TOKEN_LCURLY stmt_list TOKEN_RCURLY
-                { $$ = decl_create($1, $3, 0, $6, 0, 0); }
-            | ident TOKEN_COLON type TOKEN_EQUAL TOKEN_LCURLY TOKEN_RCURLY
-                { $$ = decl_create($1, $3, 0, 0, 0, 1); }
-            | ident TOKEN_COLON TOKEN_ARRAY TOKEN_LBRACK TOKEN_RBRACK type2 TOKEN_EQUAL expr TOKEN_SEMI
-                { $$ = decl_create($1, $6, $8, 0, 0, 0); }
-            ;
-*/
-
 // good
 stmt        : decl
                 { $$ = stmt_create(STMT_DECL, $1, 0, 0, 0, 0, 0); }
@@ -205,45 +191,6 @@ stmt_list2  : stmt stmt_list_n
                 { $$ = $1; $1->next = $2; }
             ;
 
-
-/*
-stmt        : stmt_no_inner
-                { $$ = $1; }
-            | stmt_regular
-                { $$ = $1; }
-            ;
-
-stmt_regular: TOKEN_IF TOKEN_LPAREN expr TOKEN_RPAREN stmt_regular TOKEN_ELSE stmt_regular
-                { $$ = stmt_create(STMT_IF_ELSE, 0, 0, $3, 0, $5, $7); }
-            | TOKEN_LCURLY stmt_list TOKEN_RCURLY
-                { $$ = stmt_create(STMT_BLOCK, 0, 0, 0, 0, $2, 0); }
-            | expr TOKEN_SEMI
-                { $$ = stmt_create(STMT_EXPR, 0, 0, $1, 0, 0, 0); }
-            | TOKEN_PRINT expr_list TOKEN_SEMI
-                { $$ = stmt_create(STMT_PRINT, 0, 0, $2, 0, 0, 0); }
-            | TOKEN_PRINT TOKEN_SEMI 
-                { $$ = stmt_create(STMT_PRINT, 0, 0, 0, 0, 0, 0); }
-            | TOKEN_FOR TOKEN_LPAREN expr_opt TOKEN_SEMI expr_opt TOKEN_SEMI expr_opt TOKEN_RPAREN stmt_regular 
-                { $$ = stmt_create(STMT_FOR, 0, $3, $5, $7, $9, 0); }
-            | TOKEN_RETURN expr_opt TOKEN_SEMI
-                { $$ = stmt_create(STMT_RETURN, 0, $2, 0, 0, 0, 0); }
-            | decl
-                { $$ = stmt_create(STMT_DECL, $1, 0, 0, 0, 0, 0); }
-            ;
-
-stmt_no_inner: TOKEN_IF TOKEN_LPAREN expr TOKEN_RPAREN stmt
-                { $$ = stmt_create(STMT_IF_ELSE, 0, 0, $3, 0, $5, 0); }
-             | TOKEN_IF TOKEN_LPAREN expr TOKEN_RPAREN stmt_regular TOKEN_ELSE stmt_no_inner
-                { $$ = stmt_create(STMT_IF_ELSE, 0, 0, $3, 0, $5, $7); } 
-            ;
-
-stmt_list   : stmt stmt_list 
-                { $1->next = $2; $$ = $1; }
-            | stmt
-                { $$ = $1; }
-            ;
-*/
-
 // good
 expr_list   : expr_list_n
                 { $$ = $1; }
@@ -263,13 +210,6 @@ expr_list_array : expr_list_n
                 { $$ = $1; }
             ;
 
-/*
-expr_list   : expr
-                { $$ = $1; }
-            | expr TOKEN_COMMA expr_list
-                { $$ = expr_create(EXPR_COMMA, $1, $3); }
-            ;
-*/
 // good
 expr	    : expr_assign
                 { $$ = $1; }
@@ -278,8 +218,6 @@ expr	    : expr_assign
 // good 
 expr_assign : expr TOKEN_EQUAL expr_assign
                 { $$ = expr_create(EXPR_EQUAL, $1, $3); }
-            // | expr_array TOKEN_EQUAL expr_assign
-            //     { $$ = expr_create(EXPR_EQUAL, $1, $3); }
             | expr_or
                 { $$ = $1; }
             ;
@@ -383,25 +321,9 @@ expr_group  : TOKEN_LPAREN expr TOKEN_RPAREN
             | expr_values
             ;
 
-/*expr_group  : TOKEN_LPAREN expr TOKEN_RPAREN
-                { $$ = expr_create(EXPR_GROUP, 0, $2); }
-            | ident TOKEN_LPAREN TOKEN_RPAREN
-                { $$ = expr_create(EXPR_FUNCTION, expr_create_name($1), 0); }
-            | ident TOKEN_LPAREN expr_list TOKEN_RPAREN
-                { $$ = expr_create(EXPR_FUNCTION, expr_create_name($1), $3); }
-            | TOKEN_LCURLY expr_list TOKEN_RCURLY
-                { $$ = expr_create(EXPR_ARRAY_LITERAL, $2, 0); }
-            | TOKEN_LBRACK expr TOKEN_RBRACK
-                { $$ = $2; }
-            | expr_values
-                { $$ = $1; }
-            ;
-*/
 // good
 expr_values : TOKEN_CHAR_LITERAL
                 { 
-                    //char *txt = replaceEscChars(yytext);
-                    //$$ = expr_create_character_literal(txt[1]);
                     $$ = expr_create_character_literal(strdup(yytext));
                  }
             | TOKEN_DIGITS
@@ -483,12 +405,6 @@ array_elements: TOKEN_LBRACK expr TOKEN_RBRACK array_elements
             |
                 { $$ = 0; }
             ;
-
-/*
-param       : ident TOKEN_COLON type
-                { $$ = param_list_create($1, $3, 0); }
-            ;
-*/
 
 // good 
 ident       : TOKEN_IDENTIFIER

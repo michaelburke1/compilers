@@ -36,7 +36,6 @@ const char * symbol_codegen(struct symbol *s, FILE * file) {
 	int vars[30];
 
 	if (s->kind == SYMBOL_GLOBAL) {
-	    printf("printing name!\nYeet:%s&\n", s->name);
         return s->name;
 	}
 
@@ -68,6 +67,5 @@ const char * symbol_codegen(struct symbol *s, FILE * file) {
 		strcpy(rValue, instruction);
 		return rValue;
 	}
-    printf("printing nothing\n");
     return "";
 }

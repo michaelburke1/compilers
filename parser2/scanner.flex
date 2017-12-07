@@ -11,6 +11,8 @@ int eatComments();
 DIGIT           [0-9]
 LETTER          [a-zA-Z]
 WHITESPACE      [ \t\n\r] 
+CHAR            \\.|[^\\']
+CHARACTER       '{CHAR}'
 
 %%
 
@@ -61,7 +63,7 @@ char                                return TOKEN_CHAR;
 {DIGIT}+                            return TOKEN_DIGITS;
 ({LETTER}|_)({DIGIT}|{LETTER}|_)*   return TOKEN_IDENTIFIER;
 \"(([^"\n]|([^\\]\\\"))*)\"         return TOKEN_STRING_LITERAL;
-\'({LETTER}|{DIGIT}|\\({LETTER}|{DIGIT}))\'  			return TOKEN_CHAR_LITERAL;
+{CHARACTER}                         return TOKEN_CHAR_LITERAL;
 {WHITESPACE}                        /* do nothing */
 .                                   return TOKEN_ERROR;
 
@@ -82,6 +84,8 @@ int eatComments() {
             return 1;
         }
     }
+
+    /*\'({LETTER}|{DIGIT}|\\({LETTER}|{DIGIT}))\'  			return TOKEN_CHAR_LITERAL;*/
     printf("eat\n");
     return 0;
 }

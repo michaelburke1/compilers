@@ -1,4 +1,8 @@
-main:function integer ()=
+str:string = "hello";
+
+main: function void () = 
 {
-	return 10;
+	str = "goodbye";
+	print str;
+
 }

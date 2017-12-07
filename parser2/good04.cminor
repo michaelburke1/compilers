@@ -1,25 +1,10 @@
-// test character comparisions/headers
-charFxn: function char(x:char)=
+arr: array [5] integer = {1,2,3,4,5};
+
+main:function integer () = 
 {
-	if(x == 'a')
-	{
-		return 'z';
-	}
-}
-main:function void ()=
-{
-c:char;
-	if('a' == charFxn('c'))
-	{
-		print "unreachable";
-	}
-	if('a' != 'a')
-	{
-		print "unreachable";
-	}
-	if(c == 'a')
-	{
-		print "unreachable";
-	}
+
+
+	x:integer = arr[3];
+	return x;
 
 }

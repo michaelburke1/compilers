@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int forIndex = 0;
+int forIndex = -2;
 
 struct stmt * stmt_create( stmt_kind_t kind, struct decl *d, struct expr *init_expr, struct expr *e, struct expr *next_expr, struct stmt *body, struct stmt *else_body ) {
 
@@ -193,8 +193,6 @@ void stmt_codegen(struct stmt *s, FILE * file) {
         return; 
     }
     
-    printf("stmt codecg we here\n");
-
     int else_label, done_label;
 
     switch(s->kind) {
@@ -207,19 +205,13 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             break;
         case STMT_RETURN:
             if (s->init_expr) {
-                printf("in return, going into expr\n");
                 expr_codegen(s->init_expr, file);
-                printf("expr done\n");
-                printf("doing move and scratch_name\nreg: %d\n", s->init_expr->Register);
                 fprintf(file,  "MOV %s, %%rax\n", scratch_name(s->init_expr->Register));
-                printf("return freeing\n");
                 scratch_free(s->init_expr->Register);
-                printf("return freed\n");
             }
             fprintf(file,  "JMP FUNCTION%d\n", getFunctionCount());
             break;
         case STMT_IF_ELSE:
-            printf("we ifing\n");
             else_label = label_create();
             done_label = label_create();
             expr_codegen(s->expr, file);
@@ -239,7 +231,7 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             char label2[50];
             label2[0] = '.'; 
             label2[1] = 'L'; 
-            label2[2] = '0';
+            label2[2] = '\0';
             char num2[100];
             sprintf(num2, "%d", done_label);
             strcat(label2, num2);
@@ -252,6 +244,7 @@ void stmt_codegen(struct stmt *s, FILE * file) {
             stmt_codegen(s->body, file);
             break;
         case STMT_FOR:
+            forIndex += 2;
             s->forIndex = forIndex + 1;
             if (s->init_expr) {
                 expr_codegen(s->init_expr, file);
@@ -272,7 +265,6 @@ void stmt_codegen(struct stmt *s, FILE * file) {
                 expr_codegen(s->next_expr, file);
             }
             fprintf(file, "\tJMP FOR%d\nFOR%d:", s->forIndex - 1, s->forIndex);
-            forIndex += 2;
             break;
         case STMT_PRINT:
             printStmt(s->expr, file);
